@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add New Technician - ServiceHub</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link href="/css/add-technician.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="technician-form-container">
+      <!-- Header -->
+      <header class="technician-header">
+        <div class="technician-header-content">
+          <div class="technician-title">
+            <div class="icon">
+              <i class="fas fa-user-cog"></i>
+            </div>
+            <h1>Add New Technician</h1>
+          </div>
+          <div class="header-actions">
+            <a href="/admin/dashboard" class="btn-secondary-technician">
+              <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+          </div>
+        </div>
+      </header>
+>
+
+      <!-- Flash Messages -->
+      <div class="messages-container">
+        <% if (messages.error) { %>
+        <div class="alert-technician alert-error-technician">
+          <div class="alert-icon-technician">
+            <i class="fas fa-exclamation-circle"></i>
+          </div>
+          <div class="alert-content">
+            <strong>Error</strong>
+            <p><%= messages.error %></p>
+          </div>
+        </div>
+        <% } %> <% if (messages.success) { %>
+        <div class="alert-technician alert-success-technician">
+          <div class="alert-icon-technician">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="alert-content">
+            <strong>Success</strong>
+            <p><%= messages.success %></p>
+          </div>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Technician Form -->
+      <div class="technician-form-wrapper">
+        <!-- Personal Information Section -->
+        <section class="form-section-technician">
+          <div class="section-header-technician">
+            <div class="section-icon-technician">
+              <i class="fas fa-user"></i>
+            </div>
+            <div>
+              <h2>Personal Information</h2>
+              <p class="section-description-technician">
+                Basic details about the technician
+              </p>
+            </div>
+          </div>
+
+          <div class="form-grid-technician">
+            <div class="form-group-technician">
+              <label for="name" class="form-label-technician">
+                Full Name <span class="required">*</span>
+              </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-user input-icon-technician"></i>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  placeholder="Enter full name"
+                  class="form-input-technician"
+                />
+              </div>
+            </div>
+
+            <div class="form-group-technician">
+              <label for="email" class="form-label-technician">
+                Email Address <span class="required">*</span>
+              </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-envelope input-icon-technician"></i>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  placeholder="Enter email address"
+                  class="form-input-technician"
+                />
+              </div>
+            </div>
+
+            <div class="form-group-technician">
+              <label for="phone" class="form-label-technician">
+                Phone Number <span class="required">*</span>
+              </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-phone input-icon-technician"></i>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  required
+                  placeholder="Enter 10-digit number"
+                  class="form-input-technician"
+                  pattern="[0-9]{10}"
+                  maxlength="10"
+                />
+              </div>
+            </div>
+
+            <div class="form-group-technician">
+              <label for="gender" class="form-label-technician"> Gender </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-venus-mars input-icon-technician"></i>
+                <select id="gender" name="gender" class="form-input-technician">
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group-technician full-width">
+            <label for="address" class="form-label-technician">
+              Address <span class="required">*</span>
+            </label>
+            <div class="input-wrapper-technician">
+              <i class="fas fa-map-marker-alt input-icon-technician"></i>
+              <textarea
+                id="address"
+                name="address"
+                rows="3"
+                required
+                placeholder="Enter complete address with city, state, and zip code"
+                class="form-input-technician"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- Professional Information Section -->
+        <section class="form-section-technician">
+          <div class="section-header-technician">
+            <div class="section-icon-technician">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div>
+              <h2>Professional Information</h2>
+              <p class="section-description-technician">
+                Technical skills and experience
+              </p>
+            </div>
+          </div>
+
+          <div class="form-grid-technician">
+            <div class="form-group-technician">
+              <label for="specialization" class="form-label-technician">
+                Specialization <span class="required">*</span>
+              </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-tools input-icon-technician"></i>
+                <select
+                  id="specialization"
+                  name="specialization"
+                  required
+                  class="form-input-technician"
+                >
+                  <option value="">Select Specialization</option>
+                  <option value="TV Repair">TV Repair</option>
+                  <option value="Refrigerator">Refrigerator</option>
+                  <option value="AC">AC</option>
+                  <option value="Washing Machine">Washing Machine</option>
+                  <option value="Car">Car</option>
+                  <option value="Fan">Fan</option>
+                  <option value="Computer">Computer</option>
+                  <option value="Mobile">Mobile</option>
+                  <option value="General">General Technician</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group-technician">
+              <label for="experience" class="form-label-technician">
+                Experience <span class="required">*</span>
+              </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-chart-line input-icon-technician"></i>
+                <select
+                  id="experience"
+                  name="experience"
+                  required
+                  class="form-input-technician"
+                >
+                  <option value="">Select Experience</option>
+                  <option value="Fresher">Fresher (0-1 years)</option>
+                  <option value="1 year">1 year</option>
+                  <option value="2 years">2 years</option>
+                  <option value="3 years">3 years</option>
+                  <option value="4 years">4 years</option>
+                  <option value="5+ years">5+ years</option>
+                  <option value="10+ years">10+ years</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid-technician">
+            <div class="form-group-technician">
+              <label for="skills" class="form-label-technician"> Skills </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-star input-icon-technician"></i>
+                <textarea
+                  id="skills"
+                  name="skills"
+                  rows="3"
+                  placeholder="e.g., Circuit Repair, Installation, Maintenance"
+                  class="form-input-technician"
+                ></textarea>
+              </div>
+              <small class="input-help-technician"
+                >Separate multiple skills with commas</small
+              >
+            </div>
+
+            <div class="form-group-technician">
+              <label for="serviceAreas" class="form-label-technician">
+                Service Areas
+              </label>
+              <div class="input-wrapper-technician">
+                <i class="fas fa-map input-icon-technician"></i>
+                <textarea
+                  id="serviceAreas"
+                  name="serviceAreas"
+                  rows="3"
+                  placeholder="e.g., Downtown, West Area, East District"
+                  class="form-input-technician"
+                ></textarea>
+              </div>
+              <small class="input-help-technician"
+                >Separate multiple areas with commas</small
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- Profile Picture Section -->
+        <section class="form-section-technician">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="userImage">Profile Image</label>
+              <input
+                type="file"
+                id="userImage"
+                name="userImage"
+                class="form-control"
+                accept="image/*"
+              />
+              <i class="fas fa-camera input-icon"></i>
+              <img id="imagePreview" class="image-preview" src="#" alt="Preview">
+            </div>
+          </div>
+        </div>
+        </section>
+
+        <!-- Form Actions -->
+        <div class="form-actions-technician">
+          <a href="/admin/dashboard" class="btn-secondary-technician">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+          <button type="submit" class="btn-primary-technician">
+            <i class="fas fa-user-plus"></i> Create Technician
+          </button>
+        </div>
+      </div>
+    </div>
+  
+    <script src="/js/add-technician.js"></script>
+  </body>
+</html>

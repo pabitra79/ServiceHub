@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link href="/css/home.css" rel="stylesheet" />
+  </head>
+  <body>
+    <%- include('layouts/navbar') %>
+
+    <div class="container">
+      <section class="technicians-section">
+        <h2 class="section-title">Our Expert Technicians</h2>
+        <p class="section-subtitle">
+          Professional and certified technicians ready to serve you
+        </p>
+
+        <% if (technicians && technicians.length > 0) { %>
+        <div class="technicians-grid">
+          <% technicians.forEach(technician => { %>
+          <div class="technician-card">
+            <div class="technician-header">
+              <img
+                src="<%= technician.userData.userImage || '/images/default-avatar.png' %>"
+                alt="<%= technician.userData.name %>"
+                class="technician-avatar"
+                onerror="this.src='/images/default-avatar.png'"
+              />
+              <div class="technician-info">
+                <h3><%= technician.userData.name %></h3>
+                <div class="technician-specialty">
+                  <%= technician.specialization %> Specialist
+                </div>
+                <div class="experience-badge">
+                  <%= technician.experience %>+ years experience
+                </div>
+              </div>
+            </div>
+
+            <div class="technician-details">
+              <div class="detail-item">
+                <i class="fas fa-tools"></i>
+                <span>Specializes in: <%= technician.specialization %></span>
+              </div>
+
+              <div class="detail-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span
+                  >Service Areas: <%= technician.serviceAreas.join(', ')
+                  %></span
+                >
+              </div>
+
+              <div class="detail-item">
+                <i class="fas fa-phone"></i>
+                <span><%= technician.userData.phone %></span>
+              </div>
+
+              <div class="detail-item">
+                <i class="fas fa-envelope"></i>
+                <span><%= technician.userData.email %></span>
+              </div>
+            </div>
+
+            <% if (technician.skills && technician.skills.length > 0) { %>
+            <div class="skills-tags">
+              <% technician.skills.forEach(skill => { %>
+              <span class="skill-tag"><%= skill %></span>
+              <% }); %>
+            </div>
+            <% } %>
+
+            <button
+              class="book-btn"
+              onclick="bookTechnician('<%= technician._id %>', '<%= technician.userData.name %>')"
+            >
+              <i class="fas fa-calendar-check"></i> Book This Technician
+            </button>
+          </div>
+          <% }); %>
+        </div>
+        <% } else { %>
+        <div style="text-align: center; padding: 40px; color: #666">
+          <i
+            class="fas fa-tools"
+            style="font-size: 3rem; margin-bottom: 20px; color: #ccc"
+          ></i>
+          <h3>No Technicians Available</h3>
+          <p>Please check back later or contact support.</p>
+        </div>
+        <% } %>
+      </section>
+    </div>
+    <script src="/js/home.js"></script>
+    <%- include('layouts/footer') %>
+  </body>
+</html>

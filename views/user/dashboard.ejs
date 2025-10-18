@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Dashboard - ServiceHub</title>
+    <link href="/css/user-dashboard.css" rel="stylesheet" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <i class="fas fa-tools"></i>
+            <span>ServiceHub</span>
+          </div>
+        </div>
+
+        <div class="user-profile">
+          <div class="user-avatar">
+            <img
+              src="<%= user.userImage || '/images/default-avatar.png' %>"
+              alt="User Avatar"
+            />
+          </div>
+          <div class="user-info">
+            <h3><%= user.name %></h3>
+            <p><%= user.email %></p>
+            <span class="user-badge">Customer</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="/user/dashboard" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="/user/services" class="nav-item">
+            <i class="fas fa-concierge-bell"></i>
+            <span>My Services</span>
+          </a>
+          <a href="/user/book-service" class="nav-item">
+            <i class="fas fa-plus-circle"></i>
+            <span>Book New Service</span>
+          </a>
+          <a href="/user/profile" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+          </a>
+          <a href="/user/settings" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+          <a href="/logout" class="nav-item logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+          <div class="header-left">
+            <h1>Dashboard</h1>
+            <p>Welcome back, <%= user.name %>! 👋</p>
+          </div>
+          <div class="header-right">
+            <div class="notification-bell">
+              <i class="fas fa-bell"></i>
+              <span class="notification-count">3</span>
+            </div>
+            <div class="user-menu">
+              <img
+                src="<%= user.userImage || '/images/default-avatar.png' %>"
+                alt="User"
+              />
+            </div>
+          </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon pending">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.pending %></h3>
+              <p>Pending Services</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon in-progress">
+              <i class="fas fa-tools"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.inProgress %></h3>
+              <p>In Progress</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon completed">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.completed %></h3>
+              <p>Completed</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon total">
+              <i class="fas fa-list-alt"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.total %></h3>
+              <p>Total Services</p>
+            </div>
+          </div>
+        </div>
+        <!-- Recent Services Section -->
+        <div class="content-section">
+          <div class="section-header">
+            <h2>Recent Service Requests</h2>
+            <a href="/user/services" class="view-all">View All</a>
+          </div>
+
+          <div class="services-table">
+            <div class="table-header">
+              <div>Service ID</div>
+              <div>Appliance</div>
+              <div>Issue</div>
+              <div>Status</div>
+              <div>Date</div>
+              <div>Action</div>
+            </div>
+
+            <div class="table-body">
+              <% if (recentServices && recentServices.length > 0) { %> <%
+              recentServices.forEach(service => { %>
+              <div class="table-row">
+                <div class="service-id">#<%= service.serviceId %></div>
+                <div class="appliance">
+                  <i class="fas fa-<%= service.applianceIcon %>"></i>
+                  <span><%= service.applianceType %></span>
+                </div>
+                <div class="issue"><%= service.issueDescription %></div>
+                <div class="status-badge <%= service.status %>">
+                  <%= service.status %>
+                </div>
+                <div class="date">
+                  <%= service.createdAt.toLocaleDateString() %>
+                </div>
+                <div class="actions">
+                  <button class="btn-view">View</button>
+                  <% if (service.status === 'pending') { %>
+                  <button class="btn-cancel">Cancel</button>
+                  <% } else if (service.status === 'in-progress') { %>
+                  <button class="btn-track">Track</button>
+                  <% } else if (service.status === 'completed') { %>
+                  <button class="btn-rate">Rate</button>
+                  <% } %>
+                </div>
+              </div>
+              <% }) %> <% } else { %>
+              <div class="no-services">
+                <p>
+                  No service requests found.
+                  <a href="/user/book-service">Book your first service!</a>
+                </p>
+              </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <!-- Sample Service 2 -->
+        <!-- DELETE THESE DUPLICATE SECTIONS - THEY ARE AFTER THE DYNAMIC EJS LOOP -->
+
+        <!-- Sample Service 2 -->
+        <div class="table-row">
+          <div class="service-id">#SRV002</div>
+          <div class="appliance">
+            <i class="fas fa-snowflake"></i>
+            <span>AC</span>
+          </div>
+          <div class="issue">Not Cooling</div>
+          <div class="status-badge in-progress">In Progress</div>
+          <div class="date">12 Dec 2024</div>
+          <div class="actions">
+            <button class="btn-view">View</button>
+            <button class="btn-track">Track</button>
+          </div>
+        </div>
+
+        <!-- Sample Service 3 -->
+        <div class="table-row">
+          <div class="service-id">#SRV003</div>
+          <div class="appliance">
+            <i class="fas fa-blender"></i>
+            <span>Refrigerator</span>
+          </div>
+          <div class="issue">Water Leakage</div>
+          <div class="status-badge completed">Completed</div>
+          <div class="date">10 Dec 2024</div>
+          <div class="actions">
+            <button class="btn-view">View</button>
+            <button class="btn-rate">Rate</button>
+          </div>
+        </div>
+
+        <!-- Sample Service 4 -->
+        <div class="table-row">
+          <div class="service-id">#SRV004</div>
+          <div class="appliance">
+            <i class="fas fa-washing-machine"></i>
+            <span>Washing Machine</span>
+          </div>
+          <div class="issue">Motor Issue</div>
+          <div class="status-badge pending">Pending</div>
+          <div class="date">08 Dec 2024</div>
+          <div class="actions">
+            <button class="btn-view">View</button>
+            <button class="btn-cancel">Cancel</button>
+          </div>
+        </div>
+        <!-- Quick Actions -->
+        <div class="content-section">
+          <div class="section-header">
+            <h2>Quick Actions</h2>
+          </div>
+          <div class="quick-actions">
+            <a href="/user/book-service" class="quick-action-card">
+              <i class="fas fa-plus-circle"></i>
+              <span>Book New Service</span>
+            </a>
+            <a href="/user/services" class="quick-action-card">
+              <i class="fas fa-history"></i>
+              <span>Service History</span>
+            </a>
+            <a href="/user/profile" class="quick-action-card">
+              <i class="fas fa-user-edit"></i>
+              <span>Update Profile</span>
+            </a>
+            <a href="/user/support" class="quick-action-card">
+              <i class="fas fa-headset"></i>
+              <span>Contact Support</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/user-dashboard.js"></script>
+  </body>
+</html>

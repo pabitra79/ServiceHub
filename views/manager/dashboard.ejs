@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="/css/manager-dashboard.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="sidebar-brand">
+          <i class="fas fa-user-tie"></i>
+          <h3>Manager Panel</h3>
+        </div>
+
+        <ul class="sidebar-menu">
+          <li>
+            <a
+              href="/manager/dashboard"
+              class="nav-link active"
+              onclick="switchTab(event, 'dashboard')"
+            >
+              <i class="fas fa-home"></i>
+              Dashboard
+            </a>
+          </li>
+
+          <!-- Manage Users -->
+          <li>
+            <a href="#" class="nav-link" onclick="toggleSubmenu(event)">
+              <i class="fas fa-users"></i>
+              Manage Users
+              <i class="fas fa-chevron-down" style="margin-left: auto"></i>
+            </a>
+            <ul class="submenu">
+              <li>
+                <a href="#users-list" onclick="switchTab(event, 'users-list')">
+                  <i class="fas fa-list"></i> All Users
+                </a>
+              </li>
+              <li>
+                <a href="#users-add" onclick="switchTab(event, 'users-add')">
+                  <i class="fas fa-user-plus"></i> Add User
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <!-- Manage Technicians -->
+          <li>
+            <a href="#" class="nav-link" onclick="toggleSubmenu(event)">
+              <i class="fas fa-tools"></i>
+              Manage Technicians
+              <i class="fas fa-chevron-down" style="margin-left: auto"></i>
+            </a>
+            <ul class="submenu">
+              <li>
+                <a
+                  href="#technicians-list"
+                  onclick="switchTab(event, 'technicians-list')"
+                >
+                  <i class="fas fa-list"></i> All Technicians
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#technicians-add"
+                  onclick="switchTab(event, 'technicians-add')"
+                >
+                  <i class="fas fa-user-plus"></i> Add Technician
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <li>
+            <a
+              href="#reports"
+              class="nav-link"
+              onclick="switchTab(event, 'reports')"
+            >
+              <i class="fas fa-chart-bar"></i>
+              Reports
+            </a>
+          </li>
+
+          <li
+            style="
+              border-top: 1px solid rgba(255, 255, 255, 0.2);
+              margin-top: 20px;
+              padding-top: 20px;
+            "
+          >
+            <a href="/manager/logout" class="nav-link">
+              <i class="fas fa-sign-out-alt"></i>
+              Logout
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div class="main-content">
+        <!-- TOPBAR -->
+        <div class="topbar">
+          <h1>Admin Dashboard</h1>
+          <div class="user-info">
+            <div class="user-avatar">
+              <% if (user.userImage) { %>
+              <img src="<%= user.userImage %>" alt="<%= user.name %>" />
+              <% } else { %> <%= user.name.charAt(0).toUpperCase() %> <% } %>
+            </div>
+            <div class="user-details">
+              <h4><%= user.name %></h4>
+              <p><%= user.role.toUpperCase() %></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- DASHBOARD SECTION -->
+        <div id="dashboard" class="content-section active">
+          <div class="topbar" style="margin-bottom: 30px">
+            <h2>Dashboard Overview</h2>
+          </div>
+
+          <div class="stats-container">
+            <div class="stat-card">
+              <div class="stat-card-icon bg-blue">
+                <i class="fas fa-users"></i>
+              </div>
+              <p class="stat-card-title">Total Users</p>
+              <p class="stat-card-number"><%= stats.totalUsers %></p>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-orange">
+                <i class="fas fa-tools"></i>
+              </div>
+              <p class="stat-card-title">Total Technicians</p>
+              <p class="stat-card-number"><%= stats.totalTechnicians %></p>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-green">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <p class="stat-card-title">Active Services</p>
+              <p class="stat-card-number">24</p>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-purple">
+                <i class="fas fa-star"></i>
+              </div>
+              <p class="stat-card-title">Average Rating</p>
+              <p class="stat-card-number">4.7</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- USERS LIST SECTION -->
+        <div id="users-list" class="content-section">
+          <div class="section-header">
+            <h2>All Users</h2>
+            <button
+              class="btn-primary-custom"
+              onclick="switchTab(event, 'users-add')"
+            >
+              <i class="fas fa-user-plus"></i> Add New User
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (users && users.length > 0) { %> <% users.forEach(user =>
+                { %>
+                <tr>
+                  <td>#<%= user._id.toString().slice(-4) %></td>
+                  <td><%= user.name %></td>
+                  <td><%= user.email %></td>
+                  <td><%= user.phone %></td>
+                  <td>
+                    <span class="badge-status badge-user">
+                      <%= user.isActive ? 'Active' : 'Inactive' %>
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button
+                        class="btn-small btn-view"
+                        onclick="viewUser('<%= user._id %>')"
+                      >
+                        <i class="fas fa-eye"></i> View
+                      </button>
+                      <button
+                        class="btn-small btn-edit"
+                        onclick="editUser('<%= user._id %>')"
+                      >
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                      <button
+                        class="btn-small btn-delete"
+                        onclick="deleteUser('<%= user._id %>')"
+                      >
+                        <i class="fas fa-trash"></i> Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="6" style="text-align: center; color: #999">
+                    No users found
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TECHNICIANS LIST SECTION
+        <div id="technicians-list" class="content-section">
+          <div class="section-header">
+            <h2>All Technicians</h2>
+            <button
+              class="btn-primary-custom"
+              onclick="switchTab(event, 'technicians-add')"
+            >
+              <i class="fas fa-user-plus"></i> Add New Technician
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Specialty</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#T001</td>
+                  <td>Mike Johnson</td>
+                  <td>mike@example.com</td>
+                  <td>+1 234 567 8902</td>
+                  <td>Electrical</td>
+                  <td>
+                    <span class="badge-status badge-technician">Active</span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="btn-small btn-view">
+                        <i class="fas fa-eye"></i> View
+                      </button>
+                      <button class="btn-small btn-edit">
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                      <button class="btn-small btn-delete">
+                        <i class="fas fa-trash"></i> Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div> -->
+
+        <!-- TECHNICIANS LIST SECTION -->
+        <div id="technicians-list" class="content-section">
+          <div class="section-header">
+            <h2>All Technicians</h2>
+            <button
+              class="btn-primary-custom"
+              onclick="switchTab(event, 'technicians-add')"
+            >
+              <i class="fas fa-user-plus"></i> Add New Technician
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Specialty</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (technicians && technicians.length > 0) { %> <%
+                technicians.forEach(technician => { %>
+                <tr>
+                  <td>#<%= technician._id.toString().slice(-4) %></td>
+                  <td><%= technician.name %></td>
+                  <td><%= technician.email %></td>
+                  <td><%= technician.phone %></td>
+                  <td><%= technician.specialty || 'General' %></td>
+                  <td>
+                    <span class="badge-status badge-technician">
+                      <%= technician.isActive ? 'Active' : 'Inactive' %>
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="btn-small btn-view">
+                        <i class="fas fa-eye"></i> View
+                      </button>
+                      <button class="btn-small btn-edit">
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                      <button class="btn-small btn-delete">
+                        <i class="fas fa-trash"></i> Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="7" style="text-align: center; color: #999">
+                    No technicians found
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- REPORTS SECTION -->
+        <div id="reports" class="content-section">
+          <div class="section-header">
+            <h2>Reports</h2>
+          </div>
+
+          <div class="stats-container">
+            <div class="stat-card">
+              <div class="stat-card-icon bg-blue">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <p class="stat-card-title">Active Services</p>
+              <p class="stat-card-number">47</p>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-green">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <p class="stat-card-title">Completed Services</p>
+              <p class="stat-card-number">156</p>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-orange">
+                <i class="fas fa-clock"></i>
+              </div>
+              <p class="stat-card-title">Pending Services</p>
+              <p class="stat-card-number">23</p>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-purple">
+                <i class="fas fa-star"></i>
+              </div>
+              <p class="stat-card-title">Average Rating</p>
+              <p class="stat-card-number">4.8</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="/js/manager-dashboard.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

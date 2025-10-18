@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Technician Dashboard - ServiceHub</title>
+    <link href="/css/technician-dashboard.css" rel="stylesheet" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <i class="fas fa-tools"></i>
+            <span>ServiceHub</span>
+          </div>
+        </div>
+
+        <div class="user-profile">
+          <div class="user-avatar">
+            <img
+              src="<%= user.userImage || '/images/default-avatar.png' %>"
+              alt="Technician Avatar"
+            />
+          </div>
+          <div class="user-info">
+            <h3><%= user.name %></h3>
+            <p><%= user.email %></p>
+            <span class="user-badge technician">Technician</span>
+            <% if (technician && technician.specialization) { %>
+            <span class="specialization"><%= technician.specialization %></span>
+            <% } %>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="/technician/dashboard" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="/technician/assignments" class="nav-item">
+            <i class="fas fa-tasks"></i>
+            <span>My Assignments</span>
+          </a>
+          <a href="/technician/schedule" class="nav-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+          </a>
+          <a href="/technician/profile" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+          </a>
+          <a href="/technician/settings" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+          <a href="/technician/logout" class="nav-item logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+          <div class="header-left">
+            <h1>Technician Dashboard</h1>
+            <p>Welcome back, <%= user.name %>! Ready for today's tasks? 🛠️</p>
+          </div>
+          <div class="header-right">
+            <div class="notification-bell">
+              <i class="fas fa-bell"></i>
+              <span class="notification-count">2</span>
+            </div>
+            <div class="user-menu">
+              <img
+                src="<%= user.userImage || '/images/default-avatar.png' %>"
+                alt="Technician"
+              />
+            </div>
+          </div>
+        </header>
+
+        <!-- Flash Messages -->
+        <% if (messages && messages.success) { %>
+        <div class="flash-message success">
+          <i class="fas fa-check-circle"></i>
+          <%= messages.success %>
+        </div>
+        <% } %> <% if (messages && messages.error) { %>
+        <div class="flash-message error">
+          <i class="fas fa-exclamation-circle"></i>
+          <%= messages.error %>
+        </div>
+        <% } %>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon assigned">
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.totalAssignedJobs || 0 %></h3>
+              <p>Total Assigned</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon in-progress">
+              <i class="fas fa-tools"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.pendingJobs || 0 %></h3>
+              <p>In Progress</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon completed">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.completedJobs || 0 %></h3>
+              <p>Completed</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon today">
+              <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="stat-info">
+              <h3><%= stats.todayJobs || 0 %></h3>
+              <p>Today's Jobs</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Technician Information Section -->
+        <% if (technician) { %>
+        <div class="info-section">
+          <h2>My Professional Information</h2>
+          <div class="info-grid">
+            <div class="info-card">
+              <h3><i class="fas fa-briefcase"></i> Specialization</h3>
+              <p><%= technician.specialization %></p>
+            </div>
+            <div class="info-card">
+              <h3><i class="fas fa-chart-line"></i> Experience</h3>
+              <p><%= technician.experience %> years</p>
+            </div>
+            <% if (technician.skills && technician.skills.length > 0) { %>
+            <div class="info-card">
+              <h3><i class="fas fa-star"></i> Skills</h3>
+              <div class="skills-list">
+                <% technician.skills.forEach(skill => { %>
+                <span class="skill-tag"><%= skill %></span>
+                <% }); %>
+              </div>
+            </div>
+            <% } %> <% if (technician.serviceAreas &&
+            technician.serviceAreas.length > 0) { %>
+            <div class="info-card">
+              <h3><i class="fas fa-map-marker-alt"></i> Service Areas</h3>
+              <div class="areas-list">
+                <% technician.serviceAreas.forEach(area => { %>
+                <span class="area-tag"><%= area %></span>
+                <% }); %>
+              </div>
+            </div>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <script>
+      function updateStatus(assignmentId, status) {
+        if (confirm("Are you sure you want to update the status?")) {
+          fetch(`/technician/update-status/${assignmentId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ status: status }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                location.reload();
+              } else {
+                alert("Failed to update status");
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Failed to update status");
+            });
+        }
+      }
+
+      // View assignment details
+      function viewAssignment(assignmentId) {
+        window.location.href = `/technician/assignment/${assignmentId}`;
+      }
+
+      // Logout confirmation
+      document.querySelector(".logout").addEventListener("click", function (e) {
+        if (!confirm("Are you sure you want to logout?")) {
+          e.preventDefault();
+        }
+      });
+    </script>
+  </body>
+</html>

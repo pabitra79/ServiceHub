@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/admin-dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="admin-container">
+      <!-- Sidebar -->
+
+      <!-- Main Content -->
+      <!-- ADD TECHNICIAN FORM SECTION -->
+      <div id="technicians-add" class="content-section">
+        <div class="section-header">
+          <h2>Add New Technician</h2>
+          <button
+            class="btn-secondary"
+            onclick="switchTab(event, 'technicians-list')"
+          >
+            <i class="fas fa-arrow-left"></i> Back to List
+          </button>
+        </div>
+
+        <div class="form-container">
+          <form
+            action="/admin/create-technician"
+            method="POST"
+            enctype="multipart/form-data"
+            class="add-form"
+          >
+            <div class="form-grid">
+              <!-- Personal Information -->
+              <div class="form-section">
+                <h3><i class="fas fa-user"></i> Personal Information</h3>
+
+                <div class="form-group">
+                  <label for="name">Full Name *</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    placeholder="Enter full name"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="email">Email Address *</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="phone">Phone Number *</label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      required
+                      pattern="[0-9]{10}"
+                      placeholder="10-digit number"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="gender">Gender *</label>
+                    <select id="gender" name="gender" required>
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="others">Others</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="address">Address *</label>
+                  <textarea
+                    id="address"
+                    name="address"
+                    required
+                    placeholder="Enter complete address"
+                    rows="3"
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="userImage">Profile Image</label>
+                  <input
+                    type="file"
+                    id="userImage"
+                    name="userImage"
+                    accept="image/*"
+                    class="file-input"
+                  />
+                  <small>Supported formats: JPG, PNG, JPEG (Max 5MB)</small>
+                </div>
+              </div>
+
+              <!-- Professional Information -->
+              <div class="form-section">
+                <h3>
+                  <i class="fas fa-briefcase"></i> Professional Information
+                </h3>
+
+                <div class="form-group">
+                  <label for="specialization">Specialization *</label>
+                  <select id="specialization" name="specialization" required>
+                    <option value="">Select Specialization</option>
+                    <option value="plumbing">Plumbing</option>
+                    <option value="electrical">Electrical</option>
+                    <option value="carpentry">Carpentry</option>
+                    <option value="cleaning">Cleaning</option>
+                    <option value="painting">Painting</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="experience">Experience (Years) *</label>
+                  <input
+                    type="number"
+                    id="experience"
+                    name="experience"
+                    required
+                    min="0"
+                    max="50"
+                    placeholder="Years of experience"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="skills">Skills</label>
+                  <input
+                    type="text"
+                    id="skills"
+                    name="skills"
+                    placeholder="e.g., Pipe fitting, Wiring, Furniture repair"
+                  />
+                  <small>Separate multiple skills with commas</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="serviceAreas">Service Areas</label>
+                  <input
+                    type="text"
+                    id="serviceAreas"
+                    name="serviceAreas"
+                    placeholder="e.g., Downtown, West Area, East Side"
+                  />
+                  <small>Separate areas with commas</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                onclick="switchTab(event, 'technicians-list')"
+              >
+                <i class="fas fa-times"></i> Cancel
+              </button>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-user-plus"></i> Create Technician
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
