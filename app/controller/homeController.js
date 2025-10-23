@@ -53,6 +53,7 @@ class HomeController {
       res.render("home", {
         title: "ServiceHub - Professional Appliance Repair",
         featuredTechnicians: featuredTechnicians,
+        user: req.user || null, // ADD THIS LINE - pass user to template
         messages: req.flash(),
       });
     } catch (error) {
@@ -60,10 +61,12 @@ class HomeController {
       res.render("home", {
         title: "ServiceHub - Professional Appliance Repair",
         featuredTechnicians: [],
+        user: req.user || null, // ADD THIS LINE
         messages: req.flash(),
       });
     }
   }
+
   async getAllTechniciansPublic(req, res) {
     try {
       const technicians = await Technician.aggregate([
@@ -121,6 +124,7 @@ class HomeController {
       res.render("technicians-public", {
         title: "Our Expert Technicians - ServiceHub",
         technicians: technicians,
+        user: req.user || null, // ADD THIS LINE
         messages: req.flash(),
       });
     } catch (error) {
@@ -128,9 +132,11 @@ class HomeController {
       res.render("technicians-public", {
         title: "Our Expert Technicians - ServiceHub",
         technicians: [],
+        user: req.user || null, // ADD THIS LINE
         messages: { error: "Error loading technicians" },
       });
     }
   }
 }
+
 module.exports = new HomeController();

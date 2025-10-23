@@ -113,15 +113,47 @@ const requireUser = (req, res, next) => {
 
     console.log("User authenticated:", decoded.email);
     req.user = decoded;
+    // its for booking user
+    const token = req.cookies.usertoken;
+
+    if (!token) {
+      console.log("No usertoken found - redirecting to login");
+      return res.redirect("/login");
+    }
+
+    const decoded1 = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded1;
     next();
   });
 };
 
 // Multiple roles allowed (flexible)
+// Multiple roles allowed (flexible)
 const requireRoles = (...allowedRoles) => {
   return (req, res, next) => {
     const secret = process.env.JWT_SECRET || "your_jwt_secret_key";
-    const { token } = req.cookies || {};
+
+    // Check ALL possible token cookies based on allowed roles
+    let token = null;
+    let tokenType = null;
+
+    // Try to find token based on allowed roles
+    if (allowedRoles.includes("manager") && req.cookies.managertoken) {
+      token = req.cookies.managertoken;
+      tokenType = "manager";
+    } else if (allowedRoles.includes("admin") && req.cookies.admintoken) {
+      token = req.cookies.admintoken;
+      tokenType = "admin";
+    } else if (
+      allowedRoles.includes("technician") &&
+      req.cookies.techniciantoken
+    ) {
+      token = req.cookies.techniciantoken;
+      tokenType = "technician";
+    } else if (allowedRoles.includes("user") && req.cookies.usertoken) {
+      token = req.cookies.usertoken;
+      tokenType = "user";
+    }
 
     if (!token) {
       console.log("No token found, redirecting to login");
@@ -131,7 +163,10 @@ const requireRoles = (...allowedRoles) => {
     jwt.verify(token, secret, (err, decoded) => {
       if (err) {
         console.log("Token verification error:", err.message);
-        res.clearCookie("token", { path: "/" });
+        // Clear the specific token that failed
+        if (tokenType) {
+          res.clearCookie(`${tokenType}token`, { path: "/" });
+        }
         return res.redirect("/login");
       }
 

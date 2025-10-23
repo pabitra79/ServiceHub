@@ -1,58 +1,138 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
 
-const bookingModel = new Schema(
+const bookingSchema = new mongoose.Schema(
   {
-    userId: {
+    // Customer details (store directly for easy access)
+    customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
       required: true,
     },
+    customerName: {
+      type: String,
+      required: true,
+    },
+    customerEmail: {
+      type: String,
+      required: true,
+    },
+    customerPhone: {
+      type: String,
+      required: true,
+    },
+    customerAddress: {
+      type: String,
+      required: true,
+    },
+
+    // Technician details
+    technicianId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+    },
+    technicianName: {
+      type: String,
+      required: true,
+    },
+    technicianSpecialization: {
+      type: String,
+      required: true,
+    },
+
+    // Service details
     serviceType: {
       type: String,
-      enum: ["Fridge", "TV", "AC", "Bycycle", "Cycle"],
       required: true,
+      enum: [
+        "plumbing",
+        "electrical",
+        "carpentry",
+        "cleaning",
+        "painting",
+        "other",
+      ],
     },
-    status: {
+
+    problemDescription: {
       type: String,
       required: true,
-      enum: ["pending", "assinged", "in-progress", "completed", "cancelled"],
-      default: "pending",
+      maxlength: 500,
     },
-    address: {
+
+    // Location details
+    serviceAddress: {
       type: String,
       required: true,
     },
-    phone: {
-      type: String,
-      required: true,
-      minlength: 10,
-      maxlength: 10,
-      match: /^[0-9]{10}$/,
-    },
-    scheduleDate: {
+
+    // Preferred timing
+    preferredDate: {
       type: Date,
       required: true,
     },
-    bookingImage: {
+
+    preferredTime: {
       type: String,
-      default: " ",
       required: true,
     },
-    assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
-      default: null,
+
+    // Booking status flow - UPDATED
+    status: {
+      type: String,
+      enum: [
+        "pending-manager-approval", // Customer chose tech, needs manager OK
+        "pending-manager-assignment", // Manager needs to assign tech
+        "assigned",
+        "in-progress",
+        "completed",
+        "cancelled",
+      ],
+      default: "pending-manager-approval",
     },
+
+    // Assignment details - UPDATED
     assignedBy: {
+      type: String, // CHANGED: from ObjectId to String to track "customer" or "manager"
+      enum: ["customer", "manager", "system"],
+      default: "customer",
+    },
+
+    assignedByName: {
+      type: String,
+    },
+
+    assignedDate: {
+      type: Date,
+    },
+
+    // Manager approval fields - ADD THESE NEW FIELDS
+    managerApprovedAt: {
+      type: Date,
+    },
+
+    approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      default: null,
+    },
+
+    // Work details
+    workStartedAt: {
+      type: Date,
+    },
+
+    workCompletedAt: {
+      type: Date,
+    },
+
+    urgency: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
-const bookingSchema = mongoose.model("booking", bookingModel);
-module.exports = bookingSchema;
+
+const Booking = mongoose.model("Booking", bookingSchema);
+module.exports = Booking;

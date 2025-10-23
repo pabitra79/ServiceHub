@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- <link href="/css/navbar.css" rel="stylesheet" /> -->
+    <link href="/css/home.css" rel="stylesheet" />
+    <style>
+      .booking-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      }
+      .technician-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-left: 4px solid #4caf50;
+      }
+    </style>
+  </head>
+  <body>
+    <%- include('layouts/navbar') %>
+
+    <div class="container">
+      <div class="booking-container">
+        <!-- Flash Messages -->
+        <% if (messages.error) { %>
+        <div
+          class="alert alert-danger alert-dismissible fade show"
+          role="alert"
+        >
+          <%= messages.error %>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+          ></button>
+        </div>
+        <% } %>
+
+        <h2 class="text-center mb-4">Book Service</h2>
+
+        <!-- Technician Info -->
+        <div class="technician-card">
+          <h4>Technician Details</h4>
+          <div class="row">
+            <div class="col-md-6">
+              <strong>Name:</strong> <%= technician.userDetails.name %>
+            </div>
+            <div class="col-md-6">
+              <strong>Specialization:</strong> <%= technician.specialization %>
+            </div>
+            <div class="col-md-6">
+              <strong>Experience:</strong> <%= technician.experience %> years
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking Form -->
+        <form action="/bookings/book" method="POST">
+          <input
+            type="hidden"
+            name="technicianId"
+            value="<%= technician.userId %>"
+          />
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Service Type *</label>
+              <select name="serviceType" class="form-select" required>
+                <option value="">Select Service</option>
+                <option value="electrical">Electrical</option>
+                <option value="plumbing">Plumbing</option>
+                <option value="carpentry">Carpentry</option>
+                <option value="cleaning">Cleaning</option>
+                <option value="painting">Painting</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Urgency Level</label>
+              <select name="urgency" class="form-select">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Problem Description *</label>
+            <textarea
+              name="problemDescription"
+              class="form-control"
+              rows="4"
+              placeholder="Please describe your problem in detail..."
+              required
+            ></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Preferred Date *</label>
+              <input
+                type="date"
+                name="preferredDate"
+                class="form-control"
+                required
+                min="<%= new Date().toISOString().split('T')[0] %>"
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Preferred Time</label>
+              <select name="preferredTime" class="form-select">
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="11:00 AM">11:00 AM</option>
+                <option value="12:00 PM">12:00 PM</option>
+                <option value="02:00 PM">02:00 PM</option>
+                <option value="03:00 PM">03:00 PM</option>
+                <option value="04:00 PM">04:00 PM</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Service Address *</label>
+            <textarea
+              name="serviceAddress"
+              class="form-control"
+              rows="3"
+              placeholder="Enter complete address where service is needed..."
+              required
+            >
+<%= user.address %></textarea
+            >
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+              Book Now
+            </button>
+            <a href="/technicians" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/home.js"></script>
+    <script src="/js/navbar.js"></script>
+  </body>
+</html>

@@ -53,6 +53,20 @@ const technicianSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // add extra for
+    availability: {
+      type: String,
+      enum: ["available", "busy", "on-leave"],
+      default: "available",
+    },
+    currentWorkload: {
+      type: Number,
+      default: 0, // Number of active assignments
+    },
+    maxWorkload: {
+      type: Number,
+      default: 5, // Maximum simultaneous jobs
+    },
   },
   { timestamps: true }
 );

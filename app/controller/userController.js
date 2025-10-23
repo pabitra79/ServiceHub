@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../model/userSchema");
 const Manager = require("../model/mangerSchema");
+const Booking = require("../model/bookingSchema");
 const UserValidation = require("../validators/userValidators");
 const statuscode = require("../helper/statusCode");
 const uploadImageToCloudnary = require("../helper/cloudinary");
@@ -114,11 +115,13 @@ class UserController {
       });
 
       // Set token in cookie
-      res.cookie("authToken", token, {
+      res.clearCookie("usertoken", { path: "/" });
+      res.cookie("usertoken", token, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7days
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/",
       });
       console.log("User registered and logged in:", newUser.email);
       req.flash("success", "Registration successful!");
@@ -290,7 +293,6 @@ class UserController {
       });
     }
   }
-
   // ==================== USER DASHBOARD ====================
   async userDashboard(req, res) {
     try {
@@ -318,7 +320,7 @@ class UserController {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log("Decoded token:", decoded);
 
-      // FIX: Find user by email since userId might not be in token
+      // Find user
       const user = await User.findById(decoded.userId);
       console.log("User found:", user ? user.email : "NO USER FOUND");
 
@@ -327,9 +329,37 @@ class UserController {
         return res.redirect("/login");
       }
 
-      console.log("Rendering dashboard for:", user.email);
+      // Get user's bookings for stats
+      const userBookings = await Booking.find({ customerId: user._id });
 
-      // Render dashboard
+      // Calculate real stats
+      const stats = {
+        pending: userBookings.filter((b) =>
+          [
+            "pending",
+            "pending-manager-approval",
+            "pending-manager-assignment",
+          ].includes(b.status)
+        ).length,
+        inProgress: userBookings.filter((b) => b.status === "in-progress")
+          .length,
+        completed: userBookings.filter((b) => b.status === "completed").length,
+        total: userBookings.length,
+      };
+
+      // Get recent services (last 5 bookings)
+      const recentServices = await Booking.find({ customerId: user._id })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select(
+          "serviceType problemDescription status createdAt technicianName"
+        )
+        .lean(); // Convert to plain objects
+
+      console.log("Real stats:", stats);
+      console.log("Recent services:", recentServices.length);
+
+      // Render dashboard with REAL data
       res.render("user/dashboard", {
         title: "User Dashboard - ServiceHub",
         user: {
@@ -341,79 +371,20 @@ class UserController {
           address: user.address,
           role: user.role,
         },
-        stats: {
-          pending: 5,
-          inProgress: 3,
-          completed: 12,
-          total: 20,
+        stats: stats,
+        recentServices: recentServices,
+        messages: {
+          success: req.flash("success"),
+          error: req.flash("error"),
         },
-        recentServices: [], // Empty for now
       });
     } catch (error) {
       console.error("Dashboard error:", error.message);
+      req.flash("error", "Failed to load dashboard");
       res.redirect("/login");
     }
   }
-  // home page with 3 technician name with details
-
-  // ==================== USER SERVICES ====================
-  // async userServices(req, res) {
-  //   try {
-  //     const userId = req.user.id;
-
-  //     // Fetch user bookings from database
-  //     const user = await User.findById(userId).select("-password");
-
-  //     if (!user) {
-  //       return res.status(404).render("error", {
-  //         message: "User not found",
-  //         status: 404,
-  //       });
-  //     }
-
-  //     res.render("user/services", {
-  //       title: "My Services - ServiceHub",
-  //       user: user,
-  //       // bookings: bookings
-  //     });
-  //   } catch (error) {
-  //     console.error("Services error:", error);
-  //     res.status(500).render("error", {
-  //       message: "Failed to load services",
-  //       status: 500,
-  //     });
-  //   }
-  // }
-
-  // ==================== BOOK SERVICE VIEW ====================
-  // async bookServiceView(req, res) {
-  //   try {
-  //     const userId = req.user.id;
-
-  //     const user = await User.findById(userId).select("-password");
-
-  //     if (!user) {
-  //       return res.status(404).render("error", {
-  //         message: "User not found",
-  //         status: 404,
-  //       });
-  //     }
-
-  //     res.render("user/bookService", {
-  //       title: "Book Service - ServiceHub",
-  //       user: user,
-  //     });
-  //   } catch (error) {
-  //     console.error("Book service error:", error);
-  //     res.status(500).render("error", {
-  //       message: "Failed to load booking page",
-  //       status: 500,
-  //     });
-  //   }
-  // }
-
   // ==================== LOGOUT ====================
-
   async logout(req, res) {
     try {
       res.clearCookie("usertoken", {

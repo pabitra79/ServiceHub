@@ -55,5 +55,4 @@ router.get(
   managerController.getManagerDetails
 );
 router.get("/manager/logout", requireManager, managerController.managerLogout);
-
 module.exports = router;

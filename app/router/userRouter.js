@@ -17,5 +17,25 @@ router.post("/login", UserController.login);
 router.get("/logout", UserController.logout);
 
 router.get("/user/dashboard", requireUser, UserController.userDashboard);
+router.get("/profile", requireUser, (req, res) => {
+  res.render("user/profile", {
+    title: "My Profile",
+    user: req.user,
+  });
+});
+
+router.get("/settings", requireUser, (req, res) => {
+  res.render("user/settings", {
+    title: "Settings",
+    user: req.user,
+  });
+});
+
+router.get("/support", requireUser, (req, res) => {
+  res.render("user/support", {
+    title: "Contact Support",
+    user: req.user,
+  });
+});
 
 module.exports = router;

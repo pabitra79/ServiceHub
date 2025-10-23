@@ -35,6 +35,37 @@
             </a>
           </li>
 
+          <!-- Manage Bookings -->
+          <!-- Manage Bookings -->
+          <li>
+            <a href="#" class="nav-link" onclick="toggleSubmenu(event)">
+              <i class="fas fa-tasks"></i>
+              Manage Bookings
+              <i class="fas fa-chevron-down" style="margin-left: auto"></i>
+            </a>
+            <ul class="submenu">
+              <li>
+                <a
+                  href="/bookings/manager/bookings"
+                  class="nav-link"
+                  onclick="return true;"
+                >
+                  <!-- ADD onclick="return true;" -->
+                  <i class="fas fa-list"></i> All Bookings
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/bookings/manager/bookings?action=add"
+                  class="nav-link"
+                  onclick="return true;"
+                >
+                  <!-- ADD onclick="return true;" -->
+                  <i class="fas fa-plus-circle"></i> Add Booking
+                </a>
+              </li>
+            </ul>
+          </li>
           <!-- Manage Users -->
           <li>
             <a href="#" class="nav-link" onclick="toggleSubmenu(event)">
@@ -113,7 +144,7 @@
       <div class="main-content">
         <!-- TOPBAR -->
         <div class="topbar">
-          <h1>Admin Dashboard</h1>
+          <h1>Manager Dashboard</h1>
           <div class="user-info">
             <div class="user-avatar">
               <% if (user.userImage) { %>
@@ -127,12 +158,39 @@
           </div>
         </div>
 
+        <!-- Flash Messages -->
+        <% if (messages && messages.success) { %>
+        <div
+          class="alert alert-success alert-dismissible fade show"
+          role="alert"
+        >
+          <%= messages.success %>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+          ></button>
+        </div>
+        <% } %> <% if (messages && messages.error) { %>
+        <div
+          class="alert alert-danger alert-dismissible fade show"
+          role="alert"
+        >
+          <%= messages.error %>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+          ></button>
+        </div>
+        <% } %>
         <!-- DASHBOARD SECTION -->
         <div id="dashboard" class="content-section active">
           <div class="topbar" style="margin-bottom: 30px">
             <h2>Dashboard Overview</h2>
           </div>
 
+          <!-- Stats Cards -->
           <div class="stats-container">
             <div class="stat-card">
               <div class="stat-card-icon bg-blue">
@@ -151,23 +209,195 @@
             </div>
 
             <div class="stat-card">
-              <div class="stat-card-icon bg-green">
-                <i class="fas fa-check-circle"></i>
+              <div class="stat-card-icon bg-warning">
+                <i class="fas fa-clock"></i>
               </div>
-              <p class="stat-card-title">Active Services</p>
-              <p class="stat-card-number">24</p>
+              <p class="stat-card-title">Pending Approvals</p>
+              <p class="stat-card-number"><%= stats.pendingApprovals || 0 %></p>
             </div>
 
             <div class="stat-card">
-              <div class="stat-card-icon bg-purple">
-                <i class="fas fa-star"></i>
+              <div class="stat-card-icon bg-info">
+                <i class="fas fa-list"></i>
               </div>
-              <p class="stat-card-title">Average Rating</p>
-              <p class="stat-card-number">4.7</p>
+              <p class="stat-card-title">Need Assignment</p>
+              <p class="stat-card-number">
+                <%= stats.pendingAssignments || 0 %>
+              </p>
+            </div>
+          </div>
+
+          <!-- Pending Bookings Section -->
+          <div class="content-section" style="margin-top: 30px">
+            <div class="section-header">
+              <h2>Pending Bookings Requiring Approval</h2>
+              <a href="/bookings/manager/bookings" class="btn-primary-custom">
+                <i class="fas fa-list"></i> Manage All Bookings
+              </a>
+            </div>
+
+            <% if (pendingBookings && pendingBookings.length > 0) { %>
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Service Type</th>
+                    <th>Technician</th>
+                    <th>Problem</th>
+                    <th>Preferred Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% pendingBookings.forEach(booking => { %>
+                  <tr>
+                    <td>
+                      <strong><%= booking.customerName %></strong><br />
+                      <small class="text-muted"
+                        ><%= booking.customerPhone %></small
+                      ><br />
+                      <small class="text-muted"
+                        ><%= booking.customerEmail %></small
+                      >
+                    </td>
+                    <td>
+                      <strong><%= booking.serviceType.toUpperCase() %></strong>
+                      <% if (booking.urgency === 'high') { %>
+                      <span class="urgent-badge">URGENT</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <strong><%= booking.technicianName %></strong><br />
+                      <small class="text-muted"
+                        ><%= booking.technicianSpecialization %></small
+                      >
+                    </td>
+                    <td>
+                      <small><%= booking.problemDescription %></small>
+                    </td>
+                    <td>
+                      <%= new Date(booking.preferredDate).toLocaleDateString()
+                      %><br />
+                      <small class="text-muted"
+                        ><%= booking.preferredTime %></small
+                      >
+                    </td>
+                    <td>
+                      <span
+                        class="badge badge-<%= booking.status === 'pending-manager-approval' ? 'warning' : 'info' %>"
+                      >
+                        <%= booking.status.replace(/-/g, ' ') %>
+                      </span>
+                    </td>
+                    <td>
+                      <div class="action-buttons">
+                        <% if (booking.status === 'pending-manager-approval') {
+                        %>
+                        <form
+                          action="/bookings/manager/bookings/approve/<%= booking._id %>"
+                          method="POST"
+                          style="display: inline"
+                        >
+                          <input type="hidden" name="action" value="approve" />
+                          <button
+                            type="submit"
+                            class="btn-small btn-success"
+                            onclick="return confirm('Approve this booking assignment?')"
+                          >
+                            <i class="fas fa-check-circle"></i> Approve
+                          </button>
+                        </form>
+                        <form
+                          action="/bookings/manager/bookings/approve/<%= booking._id %>"
+                          method="POST"
+                          style="display: inline"
+                        >
+                          <input type="hidden" name="action" value="reassign" />
+                          <button
+                            type="submit"
+                            class="btn-small btn-warning"
+                            onclick="return confirm('Reassign this booking to another technician?')"
+                          >
+                            <i class="fas fa-exchange-alt"></i> Reassign
+                          </button>
+                        </form>
+                        <% } else if (booking.status ===
+                        'pending-manager-assignment') { %>
+                        <a
+                          href="/bookings/manager/bookings"
+                          class="btn-small btn-primary"
+                        >
+                          <i class="fas fa-user-plus"></i> Assign Tech
+                        </a>
+                        <% } %>
+                        <a
+                          href="/bookings/manager/bookings"
+                          class="btn-small btn-primary"
+                        >
+                          <i class="fas fa-eye"></i> View Details
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+            <% } else { %>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i>
+              No pending bookings requiring approval at the moment.
+            </div>
+            <% } %>
+          </div>
+
+          <!-- Recent Activity Section -->
+          <div class="content-section" style="margin-top: 30px">
+            <div class="section-header">
+              <h2>Recent Activity</h2>
+            </div>
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Activity</th>
+                    <th>User</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (pendingBookings && pendingBookings.length > 0) { %> <%
+                  pendingBookings.slice(0, 3).forEach(booking => { %>
+                  <tr>
+                    <td>
+                      <%= new Date(booking.createdAt).toLocaleDateString() %>
+                    </td>
+                    <td>New Booking Created</td>
+                    <td><%= booking.customerName %></td>
+                    <td>
+                      <%= booking.serviceType %> service -
+                      <span
+                        class="badge badge-<%= booking.status === 'pending-manager-approval' ? 'warning' : 'info' %>"
+                      >
+                        <%= booking.status.replace(/-/g, ' ') %>
+                      </span>
+                    </td>
+                  </tr>
+                  <% }); %> <% } else { %>
+                  <tr>
+                    <td colspan="4" style="text-align: center; color: #999">
+                      No recent activity
+                    </td>
+                  </tr>
+                  <% } %>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-
         <!-- USERS LIST SECTION -->
         <div id="users-list" class="content-section">
           <div class="section-header">
@@ -239,61 +469,6 @@
             </table>
           </div>
         </div>
-
-        <!-- TECHNICIANS LIST SECTION
-        <div id="technicians-list" class="content-section">
-          <div class="section-header">
-            <h2>All Technicians</h2>
-            <button
-              class="btn-primary-custom"
-              onclick="switchTab(event, 'technicians-add')"
-            >
-              <i class="fas fa-user-plus"></i> Add New Technician
-            </button>
-          </div>
-
-          <div class="table-container">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Specialty</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>#T001</td>
-                  <td>Mike Johnson</td>
-                  <td>mike@example.com</td>
-                  <td>+1 234 567 8902</td>
-                  <td>Electrical</td>
-                  <td>
-                    <span class="badge-status badge-technician">Active</span>
-                  </td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small btn-view">
-                        <i class="fas fa-eye"></i> View
-                      </button>
-                      <button class="btn-small btn-edit">
-                        <i class="fas fa-edit"></i> Edit
-                      </button>
-                      <button class="btn-small btn-delete">
-                        <i class="fas fa-trash"></i> Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div> -->
-
         <!-- TECHNICIANS LIST SECTION -->
         <div id="technicians-list" class="content-section">
           <div class="section-header">
@@ -358,46 +533,79 @@
             </table>
           </div>
         </div>
-
-        <!-- REPORTS SECTION -->
-        <div id="reports" class="content-section">
+        <!-- Pending Bookings Section -->
+        <div class="content-section" id="technicians-list">
           <div class="section-header">
-            <h2>Reports</h2>
+            <h2>Pending Bookings Requiring Approval</h2>
+            <a href="/bookings/manager/bookings" class="btn-primary-custom">
+              <i class="fas fa-list"></i> Manage All Bookings
+            </a>
           </div>
 
-          <div class="stats-container">
-            <div class="stat-card">
-              <div class="stat-card-icon bg-blue">
-                <i class="fas fa-chart-line"></i>
-              </div>
-              <p class="stat-card-title">Active Services</p>
-              <p class="stat-card-number">47</p>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-card-icon bg-green">
-                <i class="fas fa-check-circle"></i>
-              </div>
-              <p class="stat-card-title">Completed Services</p>
-              <p class="stat-card-number">156</p>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-card-icon bg-orange">
-                <i class="fas fa-clock"></i>
-              </div>
-              <p class="stat-card-title">Pending Services</p>
-              <p class="stat-card-number">23</p>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-card-icon bg-purple">
-                <i class="fas fa-star"></i>
-              </div>
-              <p class="stat-card-title">Average Rating</p>
-              <p class="stat-card-number">4.8</p>
-            </div>
+          <% if (pendingBookings && pendingBookings.length > 0) { %>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Service Type</th>
+                  <th>Technician</th>
+                  <th>Preferred Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% pendingBookings.forEach(booking => { %>
+                <tr>
+                  <td>
+                    <strong><%= booking.customerName %></strong><br />
+                    <small class="text-muted"
+                      ><%= booking.customerPhone %></small
+                    >
+                  </td>
+                  <td><%= booking.serviceType %></td>
+                  <td>
+                    <strong><%= booking.technicianName %></strong><br />
+                    <small class="text-muted"
+                      ><%= booking.technicianSpecialization %></small
+                    >
+                  </td>
+                  <td>
+                    <%= new Date(booking.preferredDate).toLocaleDateString()
+                    %><br />
+                    <small class="text-muted"
+                      ><%= booking.preferredTime %></small
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge badge-<%= booking.status === 'pending-manager-approval' ? 'warning' : 'info' %>"
+                    >
+                      <%= booking.status.replace(/-/g, ' ') %>
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <a
+                        href="/bookings/manager/bookings"
+                        class="btn-small btn-primary"
+                      >
+                        <i class="fas fa-check-circle"></i> Review
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
           </div>
+          <% } else { %>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            No pending bookings requiring approval at the moment.
+          </div>
+          <% } %>
         </div>
       </div>
     </div>

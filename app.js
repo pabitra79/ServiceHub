@@ -67,9 +67,10 @@ const AdminRouter = require("./app/router/adminRoute");
 app.use("/", AdminRouter);
 const AdmiMangerRouter = require("./app/router/managerRoute");
 app.use(AdmiMangerRouter);
-
 const ManagerRouter = require("./app/router/managerRoute");
 app.use(ManagerRouter);
+const bookingRoutes = require("./app/router/bookingRoute");
+app.use("/bookings", bookingRoutes);
 // port/////////////////
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -4,6 +4,7 @@ const sendLoginCredentials = require("../helper/mailVerfy");
 const hashPassword = require("../helper/hassedpassword");
 const { generateRandomPassword } = require("../helper/passwordHelper");
 const User = require("../model/userSchema");
+const Booking = require("../model/bookingSchema");
 const mongoose = require("mongoose");
 const statuscode = require("../helper/statusCode"); // ADDED: Missing import
 const uploadImageToCloudnary = require("../helper/cloudinary"); // ADDED: Missing import
@@ -84,6 +85,22 @@ class ManagerController {
         });
       }
 
+      const pendingBookings = await Booking.find({
+        status: {
+          $in: ["pending-manager-approval", "pending-manager-assignment"],
+        },
+      })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean();
+      const pendingApprovalsCount = await Booking.countDocuments({
+        status: "pending-manager-approval",
+      });
+
+      const pendingAssignmentsCount = await Booking.countDocuments({
+        status: "pending-manager-assignment",
+      });
+
       console.log("Rendering dashboard for:", user.email, "Role:", user.role);
 
       res.render("manager/dashboard", {
@@ -98,20 +115,26 @@ class ManagerController {
         },
         users: users,
         technicians: technicians,
+        pendingBookings: pendingBookings,
         stats: {
           totalUsers: await User.countDocuments({ role: "user" }),
           totalTechnicians: technicianCount,
+          pendingApprovals: pendingApprovalsCount,
+          pendingAssignments: pendingAssignmentsCount,
           activeBookings: 12,
           completedToday: 5,
-          pendingAssignments: 3,
+        },
+        messages: {
+          success: req.flash("success"),
+          error: req.flash("error"),
         },
       });
     } catch (error) {
       console.error("Manager dashboard error:", error.message);
+      req.flash("error", "Failed to load dashboard");
       res.redirect("/login");
     }
   }
-
   async showAddManagerForm(req, res) {
     const temporaryPassword = generateRandomPassword();
 

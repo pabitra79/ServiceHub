@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link href="/css/user-dashboard.css" rel="stylesheet" />
+    <link href="/css/navbar.css" rel="stylesheet" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <%- include('../layouts/navbar') %>
+    <div class="dashboard-container">
+      <div class="sidebar">
+        <!-- Same sidebar as dashboard -->
+        <%- include('../user/partials/sidebar') %>
+      </div>
+      <div class="main-content">
+        <div class="content-section">
+          <h1>My Profile</h1>
+          <p>Profile page under construction</p>
+          <a href="/user/dashboard" class="btn btn-primary"
+            >Back to Dashboard</a
+          >
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

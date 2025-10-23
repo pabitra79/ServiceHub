@@ -8,7 +8,6 @@
   </head>
   <body>
     <%- include('layouts/navbar') %>
-    <!-- Include navbar here -->
 
     <!-- Hero Section with Background Image -->
     <section class="hero">
@@ -32,7 +31,6 @@
         </p>
 
         <div class="technicians-preview-grid">
-          <!-- This will show 3 featured technicians -->
           <% if (featuredTechnicians && featuredTechnicians.length > 0) { %> <%
           featuredTechnicians.forEach(technician => { %>
           <div class="technician-preview-card">
@@ -48,18 +46,23 @@
             <p class="technician-preview-exp">
               <%= technician.experience %> years experience
             </p>
-            <button
+
+            <!-- Check if user is logged in -->
+            <% if (user && user.role === 'user') { %>
+            <!-- Logged in user can book directly -->
+            <!-- Change technician.userId to technician.userData._id -->
+            <a
+              href="/bookings/book/<%= technician.userData._id %>"
               class="btn-view-profile"
-              onclick="viewTechnicianProfile('<%= technician._id %>')"
             >
-              View Profile
-            </button>
+              Book Now
+            </a>
+            <% } else { %>
+            <!-- Non-logged in user goes to register -->
+            <a href="/register" class="btn-view-profile"> Login to Book </a>
+            <% } %>
           </div>
-          <% }); %> <% } else { %>
-          <div class="no-technicians">
-            <p>Our technicians are ready to serve you!</p>
-          </div>
-          <% } %>
+          <% }); %> <% } %>
         </div>
 
         <div class="text-center" style="margin-top: 30px">

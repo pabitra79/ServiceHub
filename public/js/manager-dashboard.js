@@ -28,4 +28,29 @@ function toggleSubmenu(event) {
     submenu.style.display =
       submenu.style.display === "block" ? "none" : "block";
   }
+  if (
+    event.target.getAttribute("href") &&
+    event.target.getAttribute("href").startsWith("/")
+  ) {
+    return true; // Allow default navigation
+  }
+
+  event.preventDefault();
+
+  // Hide all content sections
+  document.querySelectorAll(".content-section").forEach((section) => {
+    section.classList.remove("active");
+  });
+
+  // Remove active class from all nav links
+  document.querySelectorAll(".nav-link").forEach((link) => {
+    link.classList.remove("active");
+  });
+
+  // Show the selected tab content
+  const targetTab = document.getElementById(tabId);
+  if (targetTab) {
+    targetTab.classList.add("active");
+    event.target.classList.add("active");
+  }
 }
