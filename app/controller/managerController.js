@@ -1,14 +1,14 @@
-const Manager = require("../model/mangerSchema"); // FIXED: Was "mangerSchema"
+const Manager = require("../model/mangerSchema");
 const jwt = require("jsonwebtoken");
-const sendLoginCredentials = require("../helper/mailVerfy");
+const sendLoginCredentials = require("../helper/mailVerify");
 const hashPassword = require("../helper/hassedpassword");
 const { generateRandomPassword } = require("../helper/passwordHelper");
 const User = require("../model/userSchema");
 const Booking = require("../model/bookingSchema");
 const mongoose = require("mongoose");
-const statuscode = require("../helper/statusCode"); // ADDED: Missing import
-const uploadImageToCloudnary = require("../helper/cloudinary"); // ADDED: Missing import
-
+const statuscode = require("../helper/statusCode");
+const uploadImageToCloudnary = require("../helper/cloudinary");
+const PasswordResetHelper = require("../helper/passwordResetHelper");
 class ManagerController {
   async managerDashboard(req, res) {
     try {
@@ -461,6 +461,7 @@ class ManagerController {
       res.redirect("/manager/dashboard");
     }
   }
+
 }
 
 module.exports = new ManagerController();

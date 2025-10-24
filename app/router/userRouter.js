@@ -16,6 +16,11 @@ router.get("/login", UserController.loginView);
 router.post("/login", UserController.login);
 router.get("/logout", UserController.logout);
 
+//
+router.get("/verify-email", UserController.verifyEmail);
+router.post("/resend-verification", UserController.resendVerification);
+router.get("/verification-prompt", UserController.verificationPrompt);
+
 router.get("/user/dashboard", requireUser, UserController.userDashboard);
 router.get("/profile", requireUser, (req, res) => {
   res.render("user/profile", {
@@ -37,5 +42,11 @@ router.get("/support", requireUser, (req, res) => {
     user: req.user,
   });
 });
+
+// for evryone forgotpassword
+router.get("/forgot-password", UserController.showForgotPassword);
+router.post("/forgot-password", UserController.forgotPassword);
+router.get("/reset-password/:token", UserController.showResetPassword);
+router.post("/reset-password/:token", UserController.resetPassword);
 
 module.exports = router;

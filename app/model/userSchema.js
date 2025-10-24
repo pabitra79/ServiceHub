@@ -16,6 +16,12 @@ const userModel = new Schema(
       unique: true,
       maxlength: 45,
       minlength: 7,
+      validate: {
+        validator: function (email) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        },
+        message: "Please enter a valid email address",
+      },
     },
     gender: {
       type: String,
@@ -54,6 +60,23 @@ const userModel = new Schema(
     isVerified: {
       type: Boolean,
       default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      default: null,
+    },
+    // reset password
+    resetToken: {
+      type: String,
+      default: null,
+    },
+    resetTokenExpiry: {
+      type: Date,
+      default: null,
     },
   },
   {

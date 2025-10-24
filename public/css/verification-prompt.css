@@ -1,0 +1,15 @@
+.verification-container {
+  max-width: 500px;
+  margin: 100px auto;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+.email-highlight {
+  background: #e9ecef;
+  padding: 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  word-break: break-all;
+}

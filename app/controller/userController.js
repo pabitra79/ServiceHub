@@ -8,6 +8,8 @@ const uploadImageToCloudnary = require("../helper/cloudinary");
 const hassesPassword = require("../helper/hassedpassword");
 const generationToken = require("../helper/jsonwebtoken");
 const bcryptjs = require("bcryptjs");
+const { sendEmailVerification } = require("../helper/emailVerification");
+const PasswordResetHelper = require("../helper/passwordResetHelper");
 
 class UserController {
   // =REGISTER VIEW ==
@@ -57,7 +59,6 @@ class UserController {
         });
       }
 
-      // Rest of your code remains the same...
       // Check if email already exists
       const existingUser = await User.findOne({ email: value.email });
       if (existingUser) {
@@ -106,48 +107,175 @@ class UserController {
       await newUser.save();
       console.log("User saved successfully:", newUser._id);
 
-      // Generate token
-      const token = generationToken({
-        userId: newUser._id,
-        email: newUser.email,
-        role: newUser.role,
-        name: newUser.name,
-      });
+      // Send verification email
+      try {
+        await sendEmailVerification(newUser);
+        console.log("Verification email sent to:", newUser.email);
 
-      // Set token in cookie
-      res.clearCookie("usertoken", { path: "/" });
-      res.cookie("usertoken", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
-      console.log("User registered and logged in:", newUser.email);
-      req.flash("success", "Registration successful!");
+        // Show success message but indicate verification is needed
+        req.flash(
+          "success",
+          "Registration successful! Please check your email to verify your account."
+        );
 
-      // Redirect to USER dashboard
-      res.redirect("/user/dashboard");
+        // Redirect to login with verification message
+        return res.redirect("/login?message=verify-email");
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError);
+        // If email fails, delete the user and show error
+        await User.findByIdAndDelete(newUser._id);
+        return res.status(statuscode.INTERNAL_SERVER_ERROR).render("register", {
+          title: "Register - Service Management",
+          error:
+            "Failed to send verification email. Please try again with a valid email address.",
+          success: null,
+        });
+      }
     } catch (error) {
       console.error("Registration error:", error);
       res.status(statuscode.INTERNAL_SERVER_ERROR).render("register", {
         title: "Register - Service Management",
-        error: error.message || "Registration failed. Please try again.",
+        error: "Registration failed. Please try again.",
         success: null,
       });
+    }
+  }
+
+  // ==================== EMAIL VERIFICATION ====================
+  async verifyEmail(req, res) {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res.status(400).render("error", {
+          title: "Verification Failed",
+          message: "Invalid verification link",
+        });
+      }
+
+      // Find user with valid token
+      const user = await User.findOne({
+        emailVerificationToken: token,
+        emailVerificationExpires: { $gt: Date.now() },
+      });
+
+      if (!user) {
+        return res.status(400).render("error", {
+          title: "Verification Failed",
+          message:
+            "Invalid or expired verification link. Please request a new one.",
+        });
+      }
+
+      // Verify the user
+      user.isVerified = true;
+      user.emailVerificationToken = undefined;
+      user.emailVerificationExpires = undefined;
+      await user.save();
+
+      req.flash("success", "Email verified successfully! You can now login.");
+      res.redirect("/login?success=verified");
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).render("error", {
+        title: "Verification Error",
+        message: "Email verification failed. Please try again.",
+      });
+    }
+  }
+
+  // ==================== RESEND VERIFICATION EMAIL ====================
+  async resendVerification(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        req.flash("error", "Email is required.");
+        return res.redirect("/login");
+      }
+
+      const user = await User.findOne({ email, isVerified: false });
+
+      if (!user) {
+        req.flash("error", "User not found or already verified.");
+        return res.redirect("/login");
+      }
+
+      // Check if previous token is still valid (prevent spam)
+      if (
+        user.emailVerificationExpires &&
+        user.emailVerificationExpires > Date.now()
+      ) {
+        const timeLeft = Math.round(
+          (user.emailVerificationExpires - Date.now()) / (60 * 1000)
+        );
+        req.flash(
+          "error",
+          `Please wait ${timeLeft} minutes before requesting a new verification email.`
+        );
+        return res.redirect("/login");
+      }
+
+      await sendEmailVerification(user);
+
+      req.flash("success", "Verification email sent! Please check your inbox.");
+      res.redirect("/login?message=verification-resent");
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      req.flash("error", "Failed to resend verification email.");
+      res.redirect("/login");
+    }
+  }
+
+  // ==================== VERIFICATION PROMPT PAGE ====================
+  async verificationPrompt(req, res) {
+    try {
+      const { email } = req.query;
+
+      if (!email) {
+        return res.redirect("/login");
+      }
+
+      res.render("verification-prompt", {
+        title: "Verify Your Email - Service Management",
+        email: email,
+        error: null,
+        success: null,
+      });
+    } catch (error) {
+      console.error("Verification prompt error:", error);
+      res.redirect("/login");
     }
   }
 
   // ==================== LOGIN VIEW ====================
   async loginView(req, res) {
     try {
+      // Check for verification messages
+      let success = null;
+      let error = null;
+      let unverifiedEmail = null;
+
+      if (req.query.message === "verify-email") {
+        success =
+          "Registration successful! Please check your email to verify your account.";
+      } else if (req.query.success === "verified") {
+        success = "Email verified successfully! You can now login.";
+      } else if (req.query.message === "verification-resent") {
+        success = "Verification email sent! Please check your inbox.";
+      }
+
       res.render("login", {
         title: "Login - Service Management",
-        error: null,
-        success: req.query.success || null,
+        error: error || req.flash("error")[0] || null,
+        success: success || req.flash("success")[0] || null,
+        unverifiedEmail: unverifiedEmail,
       });
     } catch (error) {
-      res.status(500).render("error", { message: error.message });
+      res.status(500).render("error", {
+        title: "Login Error",
+        message: error.message,
+      });
     }
   }
 
@@ -185,6 +313,16 @@ class UserController {
           title: "Login - Service Management",
           error: "Invalid email or password",
           success: null,
+        });
+      }
+
+      // Check if email is verified
+      if (!user.isVerified) {
+        return res.status(401).render("login", {
+          title: "Login - Service Management",
+          error: "Please verify your email address before logging in.",
+          success: null,
+          unverifiedEmail: user.email, // Pass email for resend functionality
         });
       }
 
@@ -265,7 +403,6 @@ class UserController {
       }
 
       console.log(`${user.role.toUpperCase()} login successful: ${user.email}`);
-      // ******  // Redirect based on role ///******* */
 
       // Update last login for manager
       if (user.role === "manager") {
@@ -274,6 +411,7 @@ class UserController {
           { lastLogin: new Date() }
         );
       }
+
       // Redirect based on role
       const dashboardRoutes = {
         user: "/user/dashboard",
@@ -293,6 +431,7 @@ class UserController {
       });
     }
   }
+
   // ==================== USER DASHBOARD ====================
   async userDashboard(req, res) {
     try {
@@ -384,6 +523,7 @@ class UserController {
       res.redirect("/login");
     }
   }
+
   // ==================== LOGOUT ====================
   async logout(req, res) {
     try {
@@ -392,11 +532,103 @@ class UserController {
         sameSite: "Strict",
       });
       req.flash("success", "User logout successful");
-      return res.redirect("/login?success=Logged out successfully"); // FIXED: Added redirect
+      return res.redirect("/login?success=Logged out successfully");
     } catch (err) {
       console.log(err, "Logout failed");
       req.flash("error", "Logout failed");
       return res.redirect("/login");
+    }
+  }
+  // for univarsal
+  async showForgotPassword(req, res) {
+    try {
+      res.render("forgot-password", {
+        title: "Forgot Password - ServiceHub",
+        error: req.flash("error")[0] || null,
+        success: req.flash("success")[0] || null,
+      });
+    } catch (error) {
+      console.error("Forgot password form error:", error);
+      res.redirect("/login");
+    }
+  }
+
+  // Handle forgot password request (universal)
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        req.flash("error", "Email is required");
+        return res.redirect("/forgot-password");
+      }
+
+      await PasswordResetHelper.requestPasswordReset(email);
+
+      req.flash("success", "Password reset link sent to your email");
+      res.redirect("/forgot-password");
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      req.flash("error", error.message);
+      res.redirect("/forgot-password");
+    }
+  }
+
+  // Show reset password form
+  async showResetPassword(req, res) {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        req.flash("error", "Invalid reset token");
+        return res.redirect("/forgot-password");
+      }
+
+      res.render("reset-password", {
+        title: "Reset Password - ServiceHub",
+        token: token,
+        error: req.flash("error")[0] || null,
+        success: req.flash("success")[0] || null,
+      });
+    } catch (error) {
+      console.error("Reset password form error:", error);
+      req.flash("error", "Invalid reset token");
+      res.redirect("/forgot-password");
+    }
+  }
+
+  // Handle reset password
+  async resetPassword(req, res) {
+    try {
+      const { token } = req.params;
+      const { password, confirmPassword } = req.body;
+
+      if (!password || !confirmPassword) {
+        req.flash("error", "All fields are required");
+        return res.redirect(`/reset-password/${token}`);
+      }
+
+      if (password !== confirmPassword) {
+        req.flash("error", "Passwords do not match");
+        return res.redirect(`/reset-password/${token}`);
+      }
+
+      if (password.length < 6) {
+        req.flash("error", "Password must be at least 6 characters long");
+        return res.redirect(`/reset-password/${token}`);
+      }
+
+      await PasswordResetHelper.resetPassword(token, password);
+
+      req.flash(
+        "success",
+        "Password reset successfully. Please login with your new password."
+      );
+      res.redirect("/login");
+    } catch (error) {
+      console.error("Reset password error:", error);
+      req.flash("error", error.message);
+      res.redirect(`/reset-password/${token}`);
     }
   }
 }
