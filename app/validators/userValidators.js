@@ -2,9 +2,9 @@ const Joi = require("joi");
 
 const registerValidation = (data) => {
   const schema = Joi.object({
-    name: Joi.string().min(2).max(12).required().messages({
+    name: Joi.string().min(2).max(30).required().messages({
       "string.min": "Name must be at least 2 characters long",
-      "string.max": "Name cannot exceed 12 characters",
+      "string.max": "Name cannot exceed 30 characters",
       "any.required": "Name is required",
     }),
     email: Joi.string().email().min(7).max(45).required().messages({
