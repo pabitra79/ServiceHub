@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
+
 const feedbackModel = new mongoose.Schema(
   {
     bookingId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "booking",
+      ref: "Booking",
       required: true,
     },
     userId: {
@@ -11,10 +12,15 @@ const feedbackModel = new mongoose.Schema(
       ref: "user",
       required: true,
     },
+    technicianId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+    },
     rating: {
       type: Number,
-      minlength: 1,
-      maxlength: 5,
+      min: 1,
+      max: 5,
       required: true,
     },
     comment: {
@@ -22,10 +28,16 @@ const feedbackModel = new mongoose.Schema(
       trim: true,
       maxlength: 500,
     },
+    status: {
+      type: String,
+      enum: ["active", "archived"],
+      default: "active",
+    },
   },
   {
     timestamps: true,
   }
 );
+
 const feedbackSchema = mongoose.model("feedback", feedbackModel);
 module.exports = feedbackSchema;

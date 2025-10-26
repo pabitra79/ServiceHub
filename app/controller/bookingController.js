@@ -22,7 +22,7 @@ class BookingController {
       const customer = await User.findById(customerId);
       if (!customer) {
         req.flash("error", "Customer not found");
-        return res.redirect("/technicians"); // FIXED: typo rediect -> redirect
+        return res.redirect("/technicians");
       }
 
       // get technician data using aggregate
@@ -102,7 +102,7 @@ class BookingController {
       req.flash(
         "success",
         "Booking created successfully! Manager will assign it soon."
-      ); // FIXED: typo sucess -> success
+      );
       res.redirect("/user/dashboard");
     } catch (error) {
       console.error("Booking creation error:", error);
@@ -116,7 +116,6 @@ class BookingController {
     try {
       const { technicianId } = req.params;
 
-      // FIXED: Check if technicianId is valid
       if (!mongoose.Types.ObjectId.isValid(technicianId)) {
         req.flash("error", "Invalid technician ID");
         return res.redirect("/technicians");
@@ -142,7 +141,7 @@ class BookingController {
 
       if (technicianData.length === 0) {
         req.flash("error", "Technician not found");
-        return res.redirect("/technicians"); // FIXED: /technician -> /technicians
+        return res.redirect("/technicians");
       }
 
       const technician = technicianData[0];
@@ -163,7 +162,6 @@ class BookingController {
     try {
       const customerId = req.user.userId;
 
-      // FIXED: Added $ before match and fixed typo
       const bookings = await Booking.aggregate([
         {
           $match: {
@@ -241,7 +239,6 @@ class BookingController {
       const { status } = req.query;
       let matchStage = {};
 
-      // FIXED: Better status filtering
       if (status && status !== "all" && status !== "action-needed") {
         matchStage.status = status;
       } else if (!status || status === "action-needed") {
@@ -252,7 +249,7 @@ class BookingController {
       }
       // If status is 'all', no status filter
 
-      console.log("Fetching bookings with filter:", matchStage); // DEBUG
+      console.log("Fetching bookings with filter:", matchStage);
 
       const bookings = await Booking.aggregate([
         { $match: matchStage },

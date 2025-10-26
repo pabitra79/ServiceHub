@@ -1,0 +1,38 @@
+.booking-card {
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+      }
+      .status-pending {
+        border-left-color: #ffc107;
+      }
+      .status-assigned {
+        border-left-color: #17a2b8;
+      }
+      .status-in-progress {
+        border-left-color: #007bff;
+      }
+      .status-completed {
+        border-left-color: #28a745;
+      }
+      .status-cancelled {
+        border-left-color: #dc3545;
+      }
+      .feedback-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+      }
+      .star-rating {
+        font-size: 24px;
+        cursor: pointer;
+      }
+      .star-rating .star {
+        color: #ddd;
+        transition: color 0.2s;
+      }
+      .star-rating .star:hover,
+      .star-rating .star.active {
+        color: #ffc107;
+      }

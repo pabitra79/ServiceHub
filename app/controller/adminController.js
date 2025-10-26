@@ -1,9 +1,9 @@
 const User = require("../model/userSchema");
-const Manager = require("../model/mangerSchema"); // FIXED: Was "mangerSchema"
+const Manager = require("../model/mangerSchema");
 const jwt = require("jsonwebtoken");
 const hashPassword = require("../helper/hassedpassword");
-const Technician = require("../model/technicianSchema"); // FIXED: Was "technicianSchmea"
-const statuscode = require("../helper/statusCode"); // ADDED: Missing import
+const Technician = require("../model/technicianSchema");
+const statuscode = require("../helper/statusCode");
 
 class Admin {
   async adminDashboard(req, res) {
@@ -20,7 +20,7 @@ class Admin {
         return res.redirect("/login");
       }
 
-      // FIXED: Removed unnecessary jwt.verify - middleware already verified
+      // Removed unnecessary jwt.verify - middleware already verified
       const admin = await User.findById(req.user.userId).select("-password");
 
       if (!admin) {

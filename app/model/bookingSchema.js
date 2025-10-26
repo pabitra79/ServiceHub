@@ -93,7 +93,7 @@ const bookingSchema = new mongoose.Schema(
 
     // Assignment details - UPDATED
     assignedBy: {
-      type: String, // CHANGED: from ObjectId to String to track "customer" or "manager"
+      type: String,
       enum: ["customer", "manager", "system"],
       default: "customer",
     },
@@ -129,6 +129,11 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       enum: ["low", "medium", "high"],
       default: "medium",
+    },
+    // its for feedback
+    hasFeedback: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

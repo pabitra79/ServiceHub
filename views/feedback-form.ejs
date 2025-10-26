@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="/css/navbar.css" rel="stylesheet" />
+    <style>
+      .booking-card {
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #28a745;
+      }
+      .star-rating {
+        font-size: 24px;
+        cursor: pointer;
+      }
+      .star-rating .star {
+        color: #ddd;
+        transition: color 0.2s;
+        margin-right: 5px;
+      }
+      .star-rating .star:hover,
+      .star-rating .star.active {
+        color: #ffc107;
+      }
+      .char-count {
+        font-size: 0.8rem;
+        color: #6c757d;
+      }
+      .no-bookings {
+        text-align: center;
+        padding: 40px;
+        background: #f8f9fa;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <%- include('./layouts/navbar') %>
+    <div class="container mt-4">
+      <!-- Flash Messages -->
+      <% if (messages.success) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= messages.success %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      <% } %> <% if (messages.error) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= messages.error %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      <% } %>
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Submit Feedback</h2>
+        <a href="/bookings/my-bookings" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Back to Bookings
+        </a>
+      </div>
+
+      <% if (bookings.length === 0) { %>
+      <div class="no-bookings">
+        <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+        <h4>No services available for feedback</h4>
+        <p class="text-muted">
+          You can only submit feedback for completed services that don't have
+          feedback yet.
+        </p>
+        <a href="/bookings/my-bookings" class="btn btn-primary">
+          View My Bookings
+        </a>
+      </div>
+      <% } else { %>
+      <div class="row">
+        <% bookings.forEach(booking => { %>
+        <div class="col-md-6 mb-4">
+          <div class="card booking-card">
+            <div class="card-body">
+              <h5 class="card-title">
+                <%= booking.serviceType.toUpperCase() %> Service
+              </h5>
+
+              <p class="card-text">
+                <strong>Problem:</strong> <%= booking.problemDescription %>
+              </p>
+
+              <div class="row mb-2">
+                <div class="col-6">
+                  <small
+                    ><strong>Date:</strong> <%= new
+                    Date(booking.preferredDate).toLocaleDateString() %></small
+                  >
+                </div>
+                <div class="col-6">
+                  <small
+                    ><strong>Time:</strong> <%= booking.preferredTime %></small
+                  >
+                </div>
+              </div>
+
+              <% if (booking.assignedTechnician) { %>
+              <div class="mb-3">
+                <small
+                  ><strong>Technician:</strong> <%=
+                  booking.assignedTechnician.name %></small
+                >
+              </div>
+              <% } %>
+
+              <!-- Feedback Form -->
+              <form
+                action="/feedback/submit"
+                method="POST"
+                class="feedback-form"
+              >
+                <input
+                  type="hidden"
+                  name="bookingId"
+                  value="<%= booking._id %>"
+                />
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Service Rating:</label>
+                  <div class="star-rating mb-2" id="rating-<%= booking._id %>">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                  </div>
+                  <input
+                    type="hidden"
+                    name="rating"
+                    id="rating-input-<%= booking._id %>"
+                    required
+                  />
+                  <small class="text-muted">Click on stars to rate (1-5)</small>
+                </div>
+
+                <div class="mb-3">
+                  <label
+                    for="comment-<%= booking._id %>"
+                    class="form-label fw-bold"
+                  >
+                    Comments (optional):
+                  </label>
+                  <textarea
+                    class="form-control"
+                    id="comment-<%= booking._id %>"
+                    name="comment"
+                    rows="3"
+                    maxlength="500"
+                    placeholder="Tell us about your experience with the service..."
+                  ></textarea>
+                  <div class="char-count" id="char-count-<%= booking._id %>">
+                    0/500 characters
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100">
+                  <i class="fas fa-paper-plane"></i> Submit Feedback
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- Add Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Star rating functionality
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".star-rating").forEach((ratingEl) => {
+          const stars = ratingEl.querySelectorAll(".star");
+          const hiddenInput = document.getElementById(
+            ratingEl.id.replace("rating-", "rating-input-")
+          );
+
+          stars.forEach((star) => {
+            star.addEventListener("click", function () {
+              const rating = this.getAttribute("data-rating");
+              hiddenInput.value = rating;
+
+              // Update star display
+              stars.forEach((s) => {
+                if (s.getAttribute("data-rating") <= rating) {
+                  s.classList.add("active");
+                } else {
+                  s.classList.remove("active");
+                }
+              });
+            });
+          });
+        });
+
+        // Character count for textareas
+        document.querySelectorAll("textarea").forEach((textarea) => {
+          const charCount = document.getElementById(
+            "char-count-" + textarea.id.split("-")[1]
+          );
+          textarea.addEventListener("input", function () {
+            const count = this.value.length;
+            charCount.textContent = count + "/500 characters";
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

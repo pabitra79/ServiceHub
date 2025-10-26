@@ -53,7 +53,7 @@ class HomeController {
       res.render("home", {
         title: "ServiceHub - Professional Appliance Repair",
         featuredTechnicians: featuredTechnicians,
-        user: req.user || null, // ADD THIS LINE - pass user to template
+        user: req.user || null, //pass user to template
         messages: req.flash(),
       });
     } catch (error) {
@@ -61,7 +61,7 @@ class HomeController {
       res.render("home", {
         title: "ServiceHub - Professional Appliance Repair",
         featuredTechnicians: [],
-        user: req.user || null, // ADD THIS LINE
+        user: req.user || null, 
         messages: req.flash(),
       });
     }
@@ -124,7 +124,7 @@ class HomeController {
       res.render("technicians-public", {
         title: "Our Expert Technicians - ServiceHub",
         technicians: technicians,
-        user: req.user || null, // ADD THIS LINE
+        user: req.user || null, 
         messages: req.flash(),
       });
     } catch (error) {
@@ -132,7 +132,7 @@ class HomeController {
       res.render("technicians-public", {
         title: "Our Expert Technicians - ServiceHub",
         technicians: [],
-        user: req.user || null, // ADD THIS LINE
+        user: req.user || null, 
         messages: { error: "Error loading technicians" },
       });
     }

@@ -113,22 +113,9 @@ const requireUser = (req, res, next) => {
 
     console.log("User authenticated:", decoded.email);
     req.user = decoded;
-    // its for booking user
-    const token = req.cookies.usertoken;
-
-    if (!token) {
-      console.log("No usertoken found - redirecting to login");
-      return res.redirect("/login");
-    }
-
-    const decoded1 = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded1;
     next();
   });
 };
-
-// Multiple roles allowed (flexible)
-// Multiple roles allowed (flexible)
 const requireRoles = (...allowedRoles) => {
   return (req, res, next) => {
     const secret = process.env.JWT_SECRET || "your_jwt_secret_key";

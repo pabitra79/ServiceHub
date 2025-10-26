@@ -12,7 +12,6 @@ const { sendEmailVerification } = require("../helper/emailVerification");
 const PasswordResetHelper = require("../helper/passwordResetHelper");
 
 class UserController {
-  // =REGISTER VIEW ==
   async RegisterView(req, res) {
     try {
       res.render("register", {
@@ -27,7 +26,6 @@ class UserController {
     }
   }
 
-  // = REGISTER CREATE =
   async register(req, res) {
     try {
       console.log("Request body:", req.body);
@@ -45,7 +43,6 @@ class UserController {
         confirmPassword,
       });
 
-      // Check validation errors - SHOW DETAILED ERRORS
       if (error) {
         console.error("Full Validation Error Details:", error.details);
         const message =
@@ -141,7 +138,6 @@ class UserController {
     }
   }
 
-  // ==================== EMAIL VERIFICATION ====================
   async verifyEmail(req, res) {
     try {
       const { token } = req.query;
@@ -184,7 +180,6 @@ class UserController {
     }
   }
 
-  // ==================== RESEND VERIFICATION EMAIL ====================
   async resendVerification(req, res) {
     try {
       const { email } = req.body;
@@ -201,7 +196,6 @@ class UserController {
         return res.redirect("/login");
       }
 
-      // Check if previous token is still valid (prevent spam)
       if (
         user.emailVerificationExpires &&
         user.emailVerificationExpires > Date.now()
@@ -227,7 +221,6 @@ class UserController {
     }
   }
 
-  // ==================== VERIFICATION PROMPT PAGE ====================
   async verificationPrompt(req, res) {
     try {
       const { email } = req.query;
@@ -248,7 +241,6 @@ class UserController {
     }
   }
 
-  // ==================== LOGIN VIEW ====================
   async loginView(req, res) {
     try {
       // Check for verification messages
@@ -279,7 +271,6 @@ class UserController {
     }
   }
 
-  // ==================== LOGIN ====================
   async login(req, res) {
     try {
       const { email, password } = req.body;
@@ -432,7 +423,7 @@ class UserController {
     }
   }
 
-  // ==================== USER DASHBOARD ====================
+
   async userDashboard(req, res) {
     try {
       console.log("=== DASHBOARD ACCESS ATTEMPT ===");
@@ -524,7 +515,7 @@ class UserController {
     }
   }
 
-  // ==================== LOGOUT ====================
+
   async logout(req, res) {
     try {
       res.clearCookie("usertoken", {

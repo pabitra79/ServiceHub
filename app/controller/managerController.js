@@ -14,7 +14,7 @@ class ManagerController {
     try {
       console.log("===== manager dashboard access ===");
 
-      // FIXED: Added proper token verification
+      //   token verification
       const token = req.cookies.managertoken;
       if (!token) {
         return res.redirect("/login");
@@ -183,8 +183,8 @@ class ManagerController {
 
       let createdById =
         req.user?.userId || (await User.findOne({ role: "admin" }))._id;
-      let createdByRole = req.user?.role || "admin"; // ← ADD THIS
-      console.log("Creator Role:", createdByRole); // Debug log
+      let createdByRole = req.user?.role || "admin";
+      console.log("Creator Role:", createdByRole);
       // image
       let imageUrl = "";
       if (req.file) {
@@ -213,7 +213,7 @@ class ManagerController {
         password: hashedPassword,
         role: "manager",
         gender: gender,
-        address: address.trim(), // FIXED: Use actual address from form
+        address: address.trim(), 
         userImage: imageUrl,
         isVerified: true,
       });
@@ -225,7 +225,7 @@ class ManagerController {
         department: department,
         isActive: true,
         createdBy: createdById,
-        createdByRole: createdByRole, // ← ADD THIS FIELD
+        createdByRole: createdByRole, 
         userId: newUser._id,
       });
 
@@ -461,7 +461,6 @@ class ManagerController {
       res.redirect("/manager/dashboard");
     }
   }
-
 }
 
 module.exports = new ManagerController();
