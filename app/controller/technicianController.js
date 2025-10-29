@@ -1,8 +1,9 @@
 const User = require("../model/userSchema");
 const Technician = require("../model/technicianSchema");
+const Booking = require("../model/bookingSchema");
 const hashPassword = require("../helper/hassedpassword");
 const { generateRandomPassword } = require("../helper/passwordHelper");
-const sendLoginCredentials = require("../helper/mailVerify");
+const { sendLoginCredentials } = require("../helper/mailVerify");
 const uploadImageToCloudnary = require("../helper/cloudinary");
 const statuscode = require("../helper/statusCode");
 const mongoose = require("mongoose");
@@ -24,11 +25,13 @@ class technicianController {
         return res.redirect("/login");
       }
 
+      const technicianId = req.user.userId;
+
       // Get technician data with user details
       const technicianData = await Technician.aggregate([
         {
           $match: {
-            userId: new mongoose.Types.ObjectId(req.user.userId),
+            userId: new mongoose.Types.ObjectId(technicianId),
           },
         },
         {
@@ -53,6 +56,9 @@ class technicianController {
             skills: 1,
             serviceAreas: 1,
             isActive: 1,
+            currentWorkload: 1,
+            maxWorkload: 1,
+            availability: 1,
             createdAt: 1,
             "userDetails._id": 1,
             "userDetails.name": 1,
@@ -71,7 +77,84 @@ class technicianController {
       const technician = technicianData[0];
       const user = technician.userDetails;
 
+      // Get technician's assigned tasks statistics
+      const assignedTasksCount = await Booking.countDocuments({
+        technicianId: new mongoose.Types.ObjectId(technicianId),
+        status: "assigned",
+      });
+
+      const inProgressTasksCount = await Booking.countDocuments({
+        technicianId: new mongoose.Types.ObjectId(technicianId),
+        status: "in-progress",
+      });
+
+      const completedTasksCount = await Booking.countDocuments({
+        technicianId: new mongoose.Types.ObjectId(technicianId),
+        status: "completed",
+      });
+
+      const completedTodayCount = await Booking.countDocuments({
+        technicianId: new mongoose.Types.ObjectId(technicianId),
+        status: "completed",
+        workCompletedAt: {
+          $gte: new Date().setHours(0, 0, 0, 0), // Today
+        },
+      });
+
+      // Get recent assigned tasks
+      const recentTasks = await Booking.aggregate([
+        {
+          $match: {
+            technicianId: new mongoose.Types.ObjectId(technicianId),
+            status: { $in: ["assigned", "in-progress"] },
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "customerId",
+            foreignField: "_id",
+            as: "customerInfo",
+          },
+        },
+        {
+          $unwind: {
+            path: "$customerInfo",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            serviceType: 1,
+            problemDescription: 1,
+            preferredDate: 1,
+            preferredTime: 1,
+            serviceAddress: 1,
+            status: 1,
+            urgency: 1,
+            assignedDate: 1,
+            workStartedAt: 1,
+            customerName: 1,
+            customerPhone: 1,
+            customerEmail: 1,
+            "customerInfo.userImage": 1,
+          },
+        },
+        {
+          $sort: {
+            preferredDate: 1, // Show earliest first
+            assignedDate: -1,
+          },
+        },
+        {
+          $limit: 5,
+        },
+      ]);
+
       console.log("Rendering technician dashboard for:", user.email);
+      console.log("Assigned tasks:", assignedTasksCount);
+      console.log("In progress tasks:", inProgressTasksCount);
 
       res.render("technician/dashboard", {
         title: "Technician Dashboard - ServiceHub",
@@ -88,17 +171,28 @@ class technicianController {
           experience: technician.experience,
           skills: technician.skills,
           serviceAreas: technician.serviceAreas,
+          currentWorkload: technician.currentWorkload,
+          maxWorkload: technician.maxWorkload,
+          availability: technician.availability,
         },
         stats: {
-          totalAssignedJobs: 0,
-          completedJobs: 0,
-          pendingJobs: 0,
-          earnings: 0,
+          totalAssignedJobs:
+            assignedTasksCount + inProgressTasksCount + completedTasksCount,
+          pendingJobs: inProgressTasksCount,
+          completedJobs: completedTasksCount,
+          todayJobs: completedTodayCount,
+          assignedTasks: assignedTasksCount,
+          inProgressTasks: inProgressTasksCount,
         },
-        messages: req.flash(),
+        recentTasks: recentTasks,
+        messages: {
+          success: req.flash("success"),
+          error: req.flash("error"),
+        },
       });
     } catch (error) {
       console.error("Technician dashboard error:", error.message);
+      req.flash("error", "Failed to load dashboard");
       res.redirect("/login");
     }
   }

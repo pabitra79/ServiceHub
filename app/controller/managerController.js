@@ -1,6 +1,6 @@
 const Manager = require("../model/mangerSchema");
 const jwt = require("jsonwebtoken");
-const sendLoginCredentials = require("../helper/mailVerify");
+const { sendLoginCredentials } = require("../helper/mailVerify");
 const hashPassword = require("../helper/hassedpassword");
 const { generateRandomPassword } = require("../helper/passwordHelper");
 const User = require("../model/userSchema");
@@ -14,7 +14,7 @@ class ManagerController {
     try {
       console.log("===== manager dashboard access ===");
 
-      //   token verification
+      // Token verification
       const token = req.cookies.managertoken;
       if (!token) {
         return res.redirect("/login");
@@ -54,18 +54,20 @@ class ManagerController {
             "userDetails.email": 1,
             "userDetails.phone": 1,
             "userDetails.role": 1,
+            "userDetails.userImage": 1,
           },
         },
       ]);
 
       const manager = managerData[0];
 
-      if (!manager || manager.length === 0) {
+      if (!manager) {
         return res.redirect("/login");
       }
 
       const user = manager.userDetails;
 
+      // Get users and technicians
       const users = await User.find({ role: "user" })
         .select("-password")
         .limit(10)
@@ -76,29 +78,61 @@ class ManagerController {
         .limit(10)
         .sort({ createdAt: -1 });
 
-      let technicianCount;
-      if (req.user.role === "admin") {
-        technicianCount = await User.countDocuments({ role: "technician" });
-      } else {
-        technicianCount = await User.countDocuments({
-          role: "technician",
-        });
-      }
-
-      const pendingBookings = await Booking.find({
-        status: {
-          $in: ["pending-manager-approval", "pending-manager-assignment"],
-        },
+      // Get different booking categories
+      const pendingAssignmentBookings = await Booking.find({
+        status: "pending-manager-assignment",
       })
         .sort({ createdAt: -1 })
         .limit(5)
         .lean();
-      const pendingApprovalsCount = await Booking.countDocuments({
-        status: "pending-manager-approval",
-      });
 
+      const assignedBookings = await Booking.find({
+        status: "assigned",
+      })
+        .sort({ assignedDate: -1 })
+        .limit(5)
+        .lean();
+
+      const inProgressBookings = await Booking.find({
+        status: "in-progress",
+      })
+        .sort({ workStartedAt: -1 })
+        .limit(5)
+        .lean();
+
+      const completedBookings = await Booking.find({
+        status: "completed",
+        workCompletedAt: {
+          $gte: new Date().setHours(0, 0, 0, 0), // Today's completed bookings
+        },
+      })
+        .sort({ workCompletedAt: -1 })
+        .limit(5)
+        .lean();
+
+      // Counts for stats
       const pendingAssignmentsCount = await Booking.countDocuments({
         status: "pending-manager-assignment",
+      });
+
+      const assignedCount = await Booking.countDocuments({
+        status: "assigned",
+      });
+
+      const inProgressCount = await Booking.countDocuments({
+        status: "in-progress",
+      });
+
+      const completedTodayCount = await Booking.countDocuments({
+        status: "completed",
+        workCompletedAt: {
+          $gte: new Date().setHours(0, 0, 0, 0),
+        },
+      });
+
+      const totalUsersCount = await User.countDocuments({ role: "user" });
+      const totalTechniciansCount = await User.countDocuments({
+        role: "technician",
       });
 
       console.log("Rendering dashboard for:", user.email, "Role:", user.role);
@@ -112,17 +146,24 @@ class ManagerController {
           phone: user.phone,
           role: user.role,
           department: manager.department,
+          userImage: user.userImage,
         },
         users: users,
         technicians: technicians,
-        pendingBookings: pendingBookings,
+
+        // Different booking categories
+        pendingAssignmentBookings: pendingAssignmentBookings,
+        assignedBookings: assignedBookings,
+        inProgressBookings: inProgressBookings,
+        completedBookings: completedBookings,
+
         stats: {
-          totalUsers: await User.countDocuments({ role: "user" }),
-          totalTechnicians: technicianCount,
-          pendingApprovals: pendingApprovalsCount,
+          totalUsers: totalUsersCount,
+          totalTechnicians: totalTechniciansCount,
           pendingAssignments: pendingAssignmentsCount,
-          activeBookings: 12,
-          completedToday: 5,
+          assignedBookings: assignedCount,
+          inProgressBookings: inProgressCount,
+          completedToday: completedTodayCount,
         },
         messages: {
           success: req.flash("success"),
@@ -135,21 +176,34 @@ class ManagerController {
       res.redirect("/login");
     }
   }
+
   async showAddManagerForm(req, res) {
     const temporaryPassword = generateRandomPassword();
 
     try {
+      // Define department options for the form
+      const departmentOptions = [
+        { value: "Operations", label: "Operations" },
+        { value: "Sales", label: "Sales" },
+        { value: "HR", label: "HR" },
+        { value: "Finance", label: "Finance" },
+        { value: "IT", label: "IT" },
+      ];
+
       res.render("manager/add-manager", {
         title: "Add New Manager",
         messages: req.flash(),
         temporaryPassword: temporaryPassword,
+        departmentOptions: departmentOptions,
         // Add these default empty values for form fields
-        name: "",
-        email: "",
-        phone: "",
-        gender: "",
-        address: "",
-        department: "",
+        formData: {
+          name: "",
+          email: "",
+          phone: "",
+          gender: "",
+          address: "",
+          department: "",
+        },
       });
     } catch (err) {
       console.log(err);
@@ -162,50 +216,96 @@ class ManagerController {
     try {
       const { name, email, phone, department, gender, address } = req.body;
 
+      console.log("=== CREATE MANAGER STARTED ===");
+      console.log("Form data received:", {
+        name,
+        email,
+        phone,
+        department,
+        gender,
+        address,
+      });
+
+      // Validate required fields
       if (!name || !email || !phone || !department || !address || !gender) {
+        console.log("❌ Validation failed: Missing required fields");
         req.flash("error", "All fields are required");
-        return res.redirect("/admin/add-manager");
+        return res.redirect("/admin/dashboard");
       }
 
+      // ✅ Normalize department to match schema enum
+      const departmentMap = {
+        operations: "Operations",
+        sales: "Sales",
+        hr: "HR",
+        finance: "Finance",
+        it: "IT",
+      };
+
+      const normalizedDepartment = departmentMap[department.toLowerCase()];
+
+      if (!normalizedDepartment) {
+        console.log("❌ Invalid department:", department);
+        req.flash("error", "Please select a valid department");
+        return res.redirect("/admin/dashboard");
+      }
+
+      console.log(
+        "✅ Department normalized:",
+        department,
+        "→",
+        normalizedDepartment
+      );
+
+      // Check if user already exists
       const existingUser = await User.findOne({
         email: email.toLowerCase().trim(),
       });
 
       if (existingUser) {
+        console.log("❌ User already exists:", email);
         req.flash("error", "User with this email already exists");
-        return res.redirect("/admin/add-manager");
+        return res.redirect("/admin/dashboard");
       }
 
       const temporaryPassword = generateRandomPassword();
-      console.log("Temporary password:", temporaryPassword);
+      console.log("🔑 Temporary password generated:", temporaryPassword);
 
       const hashedPassword = await hashPassword(temporaryPassword);
+      console.log("🔒 Password hashed successfully");
 
-      let createdById =
-        req.user?.userId || (await User.findOne({ role: "admin" }))._id;
+      // Get creator info
+      let createdById = req.user?.userId;
       let createdByRole = req.user?.role || "admin";
-      console.log("Creator Role:", createdByRole);
-      // image
+
+      if (!createdById) {
+        const adminUser = await User.findOne({ role: "admin" });
+        if (!adminUser) {
+          console.log("❌ No admin user found");
+          req.flash("error", "System error: No admin found");
+          return res.redirect("/admin/dashboard");
+        }
+        createdById = adminUser._id;
+      }
+
+      console.log("👤 Creator:", { id: createdById, role: createdByRole });
+
+      // Handle image upload
       let imageUrl = "";
       if (req.file) {
         try {
-          console.log("Uploading manager image to Cloudinary...");
+          console.log("📸 Uploading image to Cloudinary...");
           imageUrl = await uploadImageToCloudnary(req.file);
-          console.log("Manager image uploaded:", imageUrl);
+          console.log("✅ Image uploaded:", imageUrl);
         } catch (uploadError) {
-          console.error("Upload Error:", uploadError);
-          return res
-            .status(statuscode.BAD_REQUEST)
-            .render("manager/add-manager", {
-              title: "Add New Manager",
-              error: "Failed to upload image",
-              success: null,
-              messages: req.flash(),
-            });
+          console.error("❌ Image upload failed:", uploadError);
+          req.flash("error", "Failed to upload image");
+          return res.redirect("/admin/dashboard");
         }
       }
 
-      // CREATE IN USER COLLECTION
+      // CREATE USER
+      console.log("🔵 Creating user document...");
       const newUser = new User({
         name: name.trim(),
         email: email.toLowerCase().trim(),
@@ -213,36 +313,108 @@ class ManagerController {
         password: hashedPassword,
         role: "manager",
         gender: gender,
-        address: address.trim(), 
-        userImage: imageUrl,
+        address: address.trim(),
+        userImage: imageUrl || "",
         isVerified: true,
       });
 
-      await newUser.save();
+      console.log("💾 Saving user to database...");
+      const savedUser = await newUser.save();
+      console.log("✅ User saved with ID:", savedUser._id);
 
-      // CREATE IN MANAGER COLLECTION
+      // CREATE MANAGER
+      console.log("🔵 Creating manager document...");
       const newManager = new Manager({
-        department: department,
+        department: normalizedDepartment, // Use normalized department
         isActive: true,
         createdBy: createdById,
-        createdByRole: createdByRole, 
-        userId: newUser._id,
+        createdByRole: createdByRole,
+        userId: savedUser._id,
       });
 
-      await newManager.save();
+      console.log("Manager data to save:", {
+        department: newManager.department,
+        isActive: newManager.isActive,
+        createdBy: newManager.createdBy,
+        createdByRole: newManager.createdByRole,
+        userId: newManager.userId,
+      });
 
-      console.log("Manager created in both collections:", newUser.email);
+      console.log("💾 Saving manager to database...");
+      const savedManager = await newManager.save();
+      console.log("✅ Manager saved with ID:", savedManager._id);
 
-      await sendLoginCredentials(newUser, temporaryPassword);
+      // VERIFY SAVES
+      console.log("🔍 Verifying data was saved...");
+      const verifyUser = await User.findById(savedUser._id);
+      const verifyManager = await Manager.findById(savedManager._id).populate(
+        "userId"
+      );
 
+      console.log(
+        "User verification:",
+        verifyUser ? "✅ Found" : "❌ Not found"
+      );
+      console.log(
+        "Manager verification:",
+        verifyManager ? "✅ Found" : "❌ Not found"
+      );
+
+      if (!verifyUser || !verifyManager) {
+        console.error("❌ CRITICAL ERROR: Data not properly saved!");
+        console.error("User exists:", !!verifyUser);
+        console.error("Manager exists:", !!verifyManager);
+        req.flash("error", "Error: Data not saved properly. Please try again.");
+
+        // Cleanup if one failed
+        if (verifyUser && !verifyManager) {
+          await User.findByIdAndDelete(savedUser._id);
+          console.log("🧹 Cleaned up orphaned user record");
+        }
+
+        return res.redirect("/admin/dashboard");
+      }
+
+      console.log("✅ Both records verified in database");
+      console.log(
+        "Manager full document:",
+        JSON.stringify(verifyManager, null, 2)
+      );
+
+      // Send email
+      try {
+        console.log("📧 Sending login credentials email...");
+        await sendLoginCredentials(savedUser, temporaryPassword, "manager");
+        console.log("✅ Email sent successfully");
+      } catch (emailError) {
+        console.error("⚠️ Email failed (non-critical):", emailError.message);
+      }
+
+      console.log("=== CREATE MANAGER COMPLETED SUCCESSFULLY ===");
       req.flash(
         "success",
-        `Manager ${newUser.name} created. Credentials sent to email.`
+        `Manager ${savedUser.name} created successfully. Login credentials sent to email.`
       );
+
       res.redirect("/admin/dashboard");
     } catch (err) {
-      console.error("Create manager error:", err);
-      req.flash("error", "Error creating manager. Please try again.");
+      console.error("❌ CREATE MANAGER ERROR:", err.message);
+      console.error("Stack trace:", err.stack);
+
+      // Detailed error logging
+      if (err.name === "ValidationError") {
+        console.error("Validation errors:", err.errors);
+        const errorMessages = Object.values(err.errors)
+          .map((e) => e.message)
+          .join(", ");
+        req.flash("error", `Validation error: ${errorMessages}`);
+      } else if (err.code === 11000) {
+        console.error("Duplicate key error:", err.keyPattern);
+        req.flash("error", "User with this email already exists");
+      } else {
+        req.flash("error", `Error creating manager: ${err.message}`);
+      }
+
       res.redirect("/admin/dashboard");
     }
   }
@@ -255,26 +427,12 @@ class ManagerController {
             from: "users",
             localField: "userId",
             foreignField: "_id",
-            as: "userDetails",
+            as: "userData",
           },
         },
         {
           $unwind: {
-            path: "$userDetails",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "createdBy",
-            foreignField: "_id",
-            as: "createdByDetails",
-          },
-        },
-        {
-          $unwind: {
-            path: "$createdByDetails",
+            path: "$userData",
             preserveNullAndEmptyArrays: true,
           },
         },
@@ -285,23 +443,32 @@ class ManagerController {
             isActive: 1,
             lastLogin: 1,
             createdAt: 1,
-            "userDetails._id": 1,
-            "userDetails.name": 1,
-            "userDetails.email": 1,
-            "userDetails.phone": 1,
-            "userDetails.role": 1,
-            "userDetails.userImage": 1,
-            "createdByDetails.name": 1,
-            "createdByDetails.email": 1,
+            "userData._id": 1,
+            "userData.name": 1,
+            "userData.email": 1,
+            "userData.phone": 1,
+            "userData.role": 1,
+            "userData.userImage": 1,
           },
         },
         { $sort: { createdAt: -1 } },
       ]);
 
-      res.render("manager/managers-list", {
-        title: "Managers List",
+      res.render("admin/dashboard", {
+        title: "Admin Dashboard",
         managers: managers,
-        messages: req.flash(),
+        messages: {
+          success: req.flash("success"),
+          error: req.flash("error"),
+        },
+        // Pass empty form data
+        name: "",
+        email: "",
+        phone: "",
+        gender: "",
+        address: "",
+        department: "",
+        temporaryPassword: generateRandomPassword(),
       });
     } catch (err) {
       console.log(err);
@@ -397,25 +564,25 @@ class ManagerController {
 
       if (!managerId || !mongoose.Types.ObjectId.isValid(managerId)) {
         req.flash("error", "Invalid Manager ID");
-        return res.redirect("/admin/managers-list");
+        return res.redirect("/admin/dashboard"); // ✅ Changed
       }
 
       const manager = await Manager.findById(managerId);
 
       if (!manager) {
         req.flash("error", "Manager not found");
-        return res.redirect("/admin/managers-list");
+        return res.redirect("/admin/dashboard"); // ✅ Changed
       }
 
       await Manager.findByIdAndUpdate(managerId, { isActive: false });
       await User.findByIdAndUpdate(manager.userId, { isVerified: false });
 
       req.flash("success", "Manager deactivated successfully");
-      res.redirect("/admin/managers-list");
+      res.redirect("/admin/dashboard"); // ✅ Changed
     } catch (error) {
       console.error("Deactivate manager error:", error);
       req.flash("error", "Error deactivating manager");
-      res.redirect("/admin/managers-list");
+      res.redirect("/admin/dashboard"); // ✅ Changed
     }
   }
 

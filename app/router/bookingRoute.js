@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const bookingController = require("../controller/bookingController");
+const feedbackController = require("../controller/feedbackController"); //  THIS
 const {
   requireUser,
   requireManager,
@@ -30,7 +31,6 @@ router.get(
   bookingController.getAllBooking
 );
 
-// Manager approval routes - ADD THESE NEW ROUTES
 router.post(
   "/manager/bookings/approve/:bookingId",
   requireRoles("manager", "admin"),
@@ -40,7 +40,7 @@ router.post(
 router.post(
   "/manager/bookings/assign/:bookingId",
   requireRoles("manager", "admin"),
-  bookingController.assignBooking // This uses the updated assignBooking method
+  bookingController.assignBooking
 );
 
 // Technician routes
@@ -54,6 +54,8 @@ router.post(
   requireTechnician,
   bookingController.updateBookingStatus
 );
-//its forx technician form
-
+router.get("/book/new", requireUser, bookingController.showBookingForm);
+// new add
+router.get("/feedback/:bookingId", feedbackController.showEmailFeedbackForm);
+router.post("/feedback/:bookingId", feedbackController.submitEmailFeedback);
 module.exports = router;

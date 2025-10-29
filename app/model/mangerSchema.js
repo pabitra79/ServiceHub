@@ -4,7 +4,7 @@ const managerSchema = new mongoose.Schema(
   {
     department: {
       type: String,
-      enum: ["operations", "sales", "hr", "finance", "it"],
+      enum: ["Operations", "Sales", "HR", "Finance", "IT"], 
       required: [true, "Department is required"],
     },
 

@@ -61,7 +61,7 @@ const technicianSchema = new mongoose.Schema(
     },
     currentWorkload: {
       type: Number,
-      default: 0, // Number of active assignments
+      default: 0,
     },
     maxWorkload: {
       type: Number,

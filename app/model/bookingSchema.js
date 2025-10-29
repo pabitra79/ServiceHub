@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    // Customer details (store directly for easy access)
+    // Customer details
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
@@ -29,15 +29,15 @@ const bookingSchema = new mongoose.Schema(
     technicianId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      required: true,
+      required: false,
     },
     technicianName: {
       type: String,
-      required: true,
+      required: false,
     },
     technicianSpecialization: {
       type: String,
-      required: true,
+      required: false,
     },
 
     // Service details
@@ -77,52 +77,63 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Booking status flow - UPDATED
+    // Booking status
     status: {
       type: String,
       enum: [
-        "pending-manager-approval", // Customer chose tech, needs manager OK
-        "pending-manager-assignment", // Manager needs to assign tech
-        "assigned",
-        "in-progress",
-        "completed",
-        "cancelled",
+        "pending-manager-assignment", // Needs technician assignment
+        "assigned", // Assigned to technician
+        "in-progress", // Work started
+        "completed", // Work finished
+        "cancelled", // Cancelled
+        "rejected", // Rejected by manager
       ],
-      default: "pending-manager-approval",
+      default: "pending-manager-assignment",
     },
 
-    // Assignment details - UPDATED
+    // Assignment details
     assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: false,
+    },
+    assignmentType: {
       type: String,
-      enum: ["customer", "manager", "system"],
-      default: "customer",
+      enum: ["manager", "auto", "customer"],
+      default: "manager",
     },
 
     assignedByName: {
       type: String,
+      required: false,
     },
 
     assignedDate: {
       type: Date,
+      required: false,
     },
 
-    // Manager approval fields - ADD THESE NEW FIELDS
+    // Manager approval fields
     managerApprovedAt: {
       type: Date,
+      required: false,
     },
 
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
+      required: false,
     },
 
-    // Work details
+    // Work timestamps
     workStartedAt: {
       type: Date,
+      required: false,
     },
 
     workCompletedAt: {
       type: Date,
+      required: false,
     },
 
     urgency: {
@@ -130,11 +141,44 @@ const bookingSchema = new mongoose.Schema(
       enum: ["low", "medium", "high"],
       default: "medium",
     },
-    // its for feedback
+
+    // Feedback
     hasFeedback: {
       type: Boolean,
       default: false,
     },
+    // feedback schmea
+    feedbackStatus: {
+      type: String,
+      enum: ["pending", "submitted", "not-requested"],
+      default: "not-requested",
+    },
+    feedbackToken: {
+      type: String,
+      default: null,
+    },
+    feedbackRequestedAt: {
+      type: Date,
+      default: null,
+    },
+    // ADD THIS: Assignment history
+    assignmentHistory: [
+      {
+        technicianId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "user",
+        },
+        technicianName: String,
+        assignedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "user",
+        },
+        assignedByName: String,
+        assignedDate: Date,
+        status: String,
+        notes: String,
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -184,6 +184,94 @@
           </div>
         </div>
         <% } %>
+        <!-- Recent Assigned Tasks Section -->
+        <div class="tasks-section">
+          <div class="section-header">
+            <h2>Recent Assigned Tasks</h2>
+            <a href="/bookings/technician/tasks" class="btn-primary">
+              <i class="fas fa-list"></i> View All Tasks
+            </a>
+          </div>
+
+          <% if (recentTasks && recentTasks.length > 0) { %>
+          <div class="tasks-grid">
+            <% recentTasks.forEach(task => { %>
+            <div class="task-card">
+              <div class="task-header">
+                <h3><%= task.serviceType.toUpperCase() %> Service</h3>
+                <span class="task-status <%= task.status %>">
+                  <%= task.status.replace(/-/g, ' ') %>
+                </span>
+              </div>
+
+              <div class="task-details">
+                <div class="customer-info">
+                  <i class="fas fa-user"></i>
+                  <div>
+                    <strong><%= task.customerName %></strong>
+                    <p><%= task.customerPhone %></p>
+                  </div>
+                </div>
+
+                <div class="task-info">
+                  <p><strong>Address:</strong> <%= task.serviceAddress %></p>
+                  <p>
+                    <strong>Preferred Date:</strong> <%= new
+                    Date(task.preferredDate).toLocaleDateString() %>
+                  </p>
+                  <p><strong>Time:</strong> <%= task.preferredTime %></p>
+                  <% if (task.urgency === 'high') { %>
+                  <p><strong class="urgent">🚨 URGENT</strong></p>
+                  <% } %>
+                </div>
+              </div>
+
+              <div class="task-actions">
+                <% if (task.status === 'assigned') { %>
+                <form
+                  action="/bookings/technician/tasks/status/<%= task._id %>"
+                  method="POST"
+                  class="action-form"
+                >
+                  <input type="hidden" name="status" value="in-progress" />
+                  <button type="submit" class="btn-start">
+                    <i class="fas fa-play"></i> Start Work
+                  </button>
+                </form>
+                <% } %> <% if (task.status === 'in-progress') { %>
+                <form
+                  action="/bookings/technician/tasks/status/<%= task._id %>"
+                  method="POST"
+                  class="action-form"
+                >
+                  <input type="hidden" name="status" value="completed" />
+                  <button type="submit" class="btn-complete">
+                    <i class="fas fa-check"></i> Mark Complete
+                  </button>
+                </form>
+                <% } %>
+
+                <a
+                  href="/bookings/technician/tasks/details/<%= task._id %>"
+                  class="btn-view"
+                >
+                  <i class="fas fa-eye"></i> View Details
+                </a>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+          <% } else { %>
+          <div class="no-tasks">
+            <i class="fas fa-clipboard-list"></i>
+            <h3>No Tasks Assigned</h3>
+            <p>
+              You don't have any assigned tasks at the moment. Check back later
+              for new assignments.
+            </p>
+          </div>
+          <% } %>
+        </div>
       </div>
     </div>
 

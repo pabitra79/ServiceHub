@@ -9,7 +9,7 @@
     <!-- <link href="/css/add-manager.css" rel="stylesheet" /> -->
 </head>
 <body>
-<div id="managers-add" class="content-section" style="display: none;">
+<div id="managers-add" class="content-section">
     <div class="section-header">
         <h2>Add New Manager</h2>
         <button class="btn-secondary" onclick="switchTab(event, 'managers-list')">
@@ -103,14 +103,14 @@
 
                     <div class="form-group">
                         <label for="department">Department *</label>
-                        <select id="department" name="department" required>
-                            <option value="">Select Department</option>
-                            <option value="operations" <%= (typeof department !== 'undefined' && department === 'operations') ? 'selected' : '' %>>Operations</option>
-                            <option value="sales" <%= (typeof department !== 'undefined' && department === 'sales') ? 'selected' : '' %>>Sales</option>
-                            <option value="hr" <%= (typeof department !== 'undefined' && department === 'hr') ? 'selected' : '' %>>Human Resources</option>
-                            <option value="finance" <%= (typeof department !== 'undefined' && department === 'finance') ? 'selected' : '' %>>Finance</option>
-                            <option value="it" <%= (typeof department !== 'undefined' && department === 'it') ? 'selected' : '' %>>Information Technology</option>
-                        </select>
+                    <select id="department" name="department" required>
+    <option value="">Select Department</option>
+    <option value="operations">Operations</option>
+    <option value="sales">Sales</option>
+    <option value="hr">Human Resources</option>
+    <option value="finance">Finance</option>
+    <option value="it">Information Technology</option>
+</select>
                     </div>
 
                     <!-- Temporary Password Display -->
@@ -150,7 +150,7 @@
             </div>
         </form>
     </div>
-</div>
+
     <script src="/js/add-manager.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>

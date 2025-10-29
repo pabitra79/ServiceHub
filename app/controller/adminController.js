@@ -298,6 +298,113 @@ class Admin {
       return res.redirect("/login?error=Logout failed");
     }
   }
+  // Add these methods to your Admin class
+
+  async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+
+      // Check if user is admin
+      if (!req.user || req.user.role !== "admin") {
+        req.flash("error", "Only admins can delete users");
+        return res.redirect("/admin/dashboard");
+      }
+
+      // Prevent admin from deleting themselves
+      if (id === req.user.userId) {
+        req.flash("error", "Cannot delete your own account");
+        return res.redirect("/admin/dashboard");
+      }
+
+      const userToDelete = await User.findById(id);
+      if (!userToDelete) {
+        req.flash("error", "User not found");
+        return res.redirect("/admin/dashboard");
+      }
+
+      // Handle different user roles
+      if (userToDelete.role === "technician") {
+        // Delete from Technician collection first
+        await Technician.findOneAndDelete({ userId: id });
+      } else if (userToDelete.role === "manager") {
+        // Delete from Manager collection first
+        await Manager.findOneAndDelete({ userId: id });
+      }
+
+      // Now delete the user
+      await User.findByIdAndDelete(id);
+
+      console.log(`User ${id} deleted by admin`);
+      req.flash("success", `${userToDelete.role} deleted successfully`);
+      return res.redirect("/admin/dashboard");
+    } catch (error) {
+      console.error("Delete user error:", error);
+      req.flash("error", "Failed to delete user");
+      return res.redirect("/admin/dashboard");
+    }
+  }
+
+  async deleteTechnician(req, res) {
+    try {
+      const { id } = req.params;
+
+      if (!req.user || req.user.role !== "admin") {
+        req.flash("error", "Only admins can delete technicians");
+        return res.redirect("/admin/dashboard");
+      }
+
+      const technician = await Technician.findById(id);
+      if (!technician) {
+        req.flash("error", "Technician not found");
+        return res.redirect("/admin/dashboard");
+      }
+
+      // Delete the technician record
+      await Technician.findByIdAndDelete(id);
+
+      // Also delete the user account
+      await User.findByIdAndDelete(technician.userId);
+
+      console.log(`Technician ${id} deleted by admin`);
+      req.flash("success", "Technician deleted successfully");
+      return res.redirect("/admin/dashboard");
+    } catch (error) {
+      console.error("Delete technician error:", error);
+      req.flash("error", "Failed to delete technician");
+      return res.redirect("/admin/dashboard");
+    }
+  }
+
+  async deleteManager(req, res) {
+    try {
+      const { id } = req.params;
+
+      if (!req.user || req.user.role !== "admin") {
+        req.flash("error", "Only admins can delete managers");
+        return res.redirect("/admin/dashboard");
+      }
+
+      const manager = await Manager.findById(id);
+      if (!manager) {
+        req.flash("error", "Manager not found");
+        return res.redirect("/admin/dashboard");
+      }
+
+      // Delete the manager record
+      await Manager.findByIdAndDelete(id);
+
+      // Also delete the user account
+      await User.findByIdAndDelete(manager.userId);
+
+      console.log(`Manager ${id} deleted by admin`);
+      req.flash("success", "Manager deleted successfully");
+      return res.redirect("/admin/dashboard");
+    } catch (error) {
+      console.error("Delete manager error:", error);
+      req.flash("error", "Failed to delete manager");
+      return res.redirect("/admin/dashboard");
+    }
+  }
 }
 
 module.exports = new Admin();

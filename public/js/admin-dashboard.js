@@ -5,44 +5,63 @@ function toggleSubmenu(e) {
   parent.classList.toggle("open");
 }
 
-// Switch between sections
+// Switch between sections - FIXED VERSION
 function switchTab(e, tabName) {
-  e.preventDefault();
+  if (e) e.preventDefault();
+
+  console.log("Switching to tab:", tabName);
 
   // Hide all sections
   const sections = document.querySelectorAll(".content-section");
   sections.forEach((section) => {
-    section.classList.remove("active");
+    section.style.display = "none";
   });
 
   // Show selected section
   const selectedSection = document.getElementById(tabName);
   if (selectedSection) {
-    selectedSection.classList.add("active");
+    selectedSection.style.display = "block";
+    console.log("Successfully switched to:", tabName);
 
     // Update page title
     const title = selectedSection.querySelector("h2");
     if (title) {
       document.querySelector(".topbar h1").textContent = title.textContent;
     }
+  } else {
+    console.error("Section not found:", tabName);
+    // Fallback: show dashboard if section not found
+    const dashboard = document.getElementById("dashboard");
+    if (dashboard) {
+      dashboard.style.display = "block";
+    }
   }
 
   // Update active nav link
-  const navLinks = document.querySelectorAll(".nav-link");
-  navLinks.forEach((link) => {
-    link.classList.remove("active");
-  });
-  e.target.closest(".nav-link")?.classList.add("active");
+  if (e && e.target) {
+    const navLinks = document.querySelectorAll(".nav-link");
+    navLinks.forEach((link) => {
+      link.classList.remove("active");
+    });
 
-  // Close submenu if clicking a submenu item
-  const submenu = e.target.closest(".submenu");
-  if (submenu) {
-    submenu.parentElement.querySelector(".nav-link").classList.add("active");
+    const clickedLink = e.target.closest(".nav-link");
+    if (clickedLink) {
+      clickedLink.classList.add("active");
+    }
   }
 }
 
-// Close alerts after 5 seconds
+// Initialize dashboard on page load
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("Admin dashboard initialized");
+
+  // Show dashboard by default
+  const dashboard = document.getElementById("dashboard");
+  if (dashboard) {
+    dashboard.style.display = "block";
+  }
+
+  // Close alerts after 5 seconds
   const alerts = document.querySelectorAll(".alert");
   alerts.forEach((alert) => {
     setTimeout(() => {
@@ -93,7 +112,8 @@ document.addEventListener("click", function (e) {
     alert("View functionality to be implemented");
   }
 });
-// Add these functions to your admin-dashboard.js
+
+// Technician Functions
 function viewTechnician(id) {
   window.location.href = "/admin/technicians/" + id + "/details";
 }
@@ -106,4 +126,35 @@ function deleteTechnician(id) {
   if (confirm("Are you sure you want to delete this technician?")) {
     window.location.href = "/admin/technicians/" + id + "/delete";
   }
+}
+
+// Manager Functions
+function viewManager(id) {
+  window.location.href = "/admin/managers/" + id + "/details";
+}
+
+function editManager(id) {
+  window.location.href = "/admin/managers/" + id + "/edit";
+}
+
+function deleteManager(id) {
+  if (confirm("Are you sure you want to delete this manager?")) {
+    window.location.href = "/admin/managers/" + id + "/delete";
+  }
+}
+
+function deactivateManager(id) {
+  if (confirm("Are you sure you want to deactivate this manager?")) {
+    window.location.href = "/admin/managers/" + id + "/deactivate";
+  }
+}
+
+// Simple debug function (optional - remove if not needed)
+function debugManagerSections() {
+  console.log("=== DEBUG ===");
+  console.log("managers-list:", document.getElementById("managers-list"));
+  console.log("managers-add:", document.getElementById("managers-add"));
+  console.log("technicians-list:", document.getElementById("technicians-list"));
+  console.log("technicians-add:", document.getElementById("technicians-add"));
+  console.log("dashboard:", document.getElementById("dashboard"));
 }

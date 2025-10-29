@@ -122,9 +122,92 @@ const sendPasswordResetEmail = async (user, resetToken) => {
     throw new Error("Failed to send password reset email");
   }
 };
+const sendFeedbackRequestEmail = async (
+  customer,
+  booking,
+  technician,
+  feedbackToken
+) => {
+  try {
+    const websiteName = "ServiceHub";
+    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+
+    // ✅ FIX: Change from /bookings/feedback to /feedback/email
+    const feedbackLink = `${
+      process.env.BASE_URL || "http://localhost:5000"
+    }/feedback/email/${booking._id}?token=${feedbackToken}`;
+    const dashboardLink = `${
+      process.env.BASE_URL || "http://localhost:5000"
+    }/user/dashboard`;
+
+    const mailOptions = {
+      from: `"${websiteName}" <${fromEmail}>`,
+      to: customer.email,
+      subject: `How was your service experience? - ${websiteName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #007bff; color: white; padding: 20px; text-align: center;">
+            <h1>ServiceHub</h1>
+            <h2>How was your service experience?</h2>
+          </div>
+          
+          <div style="padding: 20px; background: #f9f9f9;">
+            <p>Hello <strong>${customer.name}</strong>,</p>
+            
+            <p>Your service with <strong>${
+              technician.name
+            }</strong> has been completed. We'd love to hear about your experience!</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
+              <h3 style="color: #333; margin-top: 0;">Service Details:</h3>
+              <p><strong>Service Type:</strong> ${booking.serviceType}</p>
+              <p><strong>Technician:</strong> ${technician.name}</p>
+              <p><strong>Completed On:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${feedbackLink}" 
+                 style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; 
+                        border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">
+                 Share Your Feedback
+              </a>
+            </div>
+
+            <p>Or provide feedback directly from your dashboard:</p>
+            <div style="text-align: center;">
+              <a href="${dashboardLink}" 
+                 style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; 
+                        border-radius: 5px; display: inline-block;">
+                 Go to Dashboard
+              </a>
+            </div>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              This feedback helps us improve our services and recognize our best technicians.
+            </p>
+          </div>
+          
+          <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+            <p>If you have any questions, please contact our support team.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const transporter = require("../config/emailConfig");
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Feedback email sent to ${customer.email}`);
+    console.log(`✅ Feedback link: ${feedbackLink}`); // Debug log
+    return true;
+  } catch (error) {
+    console.error("❌ Feedback email error:", error);
+    throw error;
+  }
+};
 
 module.exports = {
   sendLoginCredentials,
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendFeedbackRequestEmail,
 };

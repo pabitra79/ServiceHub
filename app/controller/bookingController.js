@@ -1,13 +1,14 @@
 const Booking = require("../model/bookingSchema");
 const User = require("../model/userSchema");
 const Technician = require("../model/technicianSchema");
+const FeedbackController = require("./feedbackController");
+const FeedbackService = require("../services/feedbackService");
 const mongoose = require("mongoose");
 
 class BookingController {
   async CreateBooking(req, res) {
     try {
       const {
-        technicianId,
         serviceType,
         problemDescription,
         preferredDate,
@@ -18,54 +19,13 @@ class BookingController {
 
       const customerId = req.user.userId;
 
-      // get customer details
       const customer = await User.findById(customerId);
       if (!customer) {
         req.flash("error", "Customer not found");
-        return res.redirect("/technicians");
+        res.redirect("/user/dashboard");
       }
 
-      // get technician data using aggregate
-      const technicianData = await Technician.aggregate([
-        {
-          $match: {
-            userId: new mongoose.Types.ObjectId(technicianId),
-            isActive: true,
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-        {
-          $unwind: "$userDetails",
-        },
-      ]);
-
-      if (technicianData.length === 0) {
-        req.flash("error", "Technician not found or not active");
-        return res.redirect("/technicians");
-      }
-
-      const technician = technicianData[0];
-      // Check technician availability
-      let flashMessage = "success";
-      let message =
-        "Booking submitted successfully! Manager will review and confirm the assignment.";
-
-      if (
-        technician.availability !== "available" ||
-        technician.currentWorkload >= technician.maxWorkload
-      ) {
-        flashMessage = "warning";
-        message = `${technician.userDetails.name} is currently busy. Manager will review and assign the best available technician.`;
-      }
-
-      // create new booking with all details
+      // create new booking WITHOUT technician details
       const newBooking = new Booking({
         customerId,
         customerName: customer.name,
@@ -73,9 +33,10 @@ class BookingController {
         customerAddress: customer.address,
         customerPhone: customer.phone,
 
-        technicianId,
-        technicianName: technician.userDetails.name,
-        technicianSpecialization: technician.specialization,
+        // NO technician details initially
+        technicianId: null,
+        technicianName: null,
+        technicianSpecialization: null,
 
         serviceType,
         problemDescription,
@@ -83,25 +44,17 @@ class BookingController {
         preferredTime: preferredTime || "10:00 AM",
         serviceAddress: serviceAddress || customer.address,
         urgency: urgency || "medium",
-        status: "pending-manager-approval",
-        assignedBy: "customer",
+
+        // New status for manager assignment
+        status: "pending-manager-assignment",
+        // assignedBy: "manager", // Manager will assign
       });
 
       await newBooking.save();
 
-      // Update technician workload only if available
-      if (
-        technician.availability === "available" &&
-        technician.currentWorkload < technician.maxWorkload
-      ) {
-        await Technician.updateOne(
-          { userId: new mongoose.Types.ObjectId(technicianId) },
-          { $inc: { currentWorkload: 1 } }
-        );
-      }
       req.flash(
         "success",
-        "Booking created successfully! Manager will assign it soon."
+        "Service request submitted successfully! Manager will assign a technician soon."
       );
       res.redirect("/user/dashboard");
     } catch (error) {
@@ -110,50 +63,19 @@ class BookingController {
       res.redirect("/bookings/techniciansBook");
     }
   }
-
-  // showing booking form
   async showBookingForm(req, res) {
     try {
-      const { technicianId } = req.params;
-
-      if (!mongoose.Types.ObjectId.isValid(technicianId)) {
-        req.flash("error", "Invalid technician ID");
-        return res.redirect("/technicians");
-      }
-
-      const technicianData = await Technician.aggregate([
-        {
-          $match: {
-            userId: new mongoose.Types.ObjectId(technicianId),
-            isActive: true,
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-        { $unwind: "$userDetails" },
-      ]);
-
-      if (technicianData.length === 0) {
-        req.flash("error", "Technician not found");
-        return res.redirect("/technicians");
-      }
-
-      const technician = technicianData[0];
-      res.render("booking-form", {
+      res.render("booking-form-new", {
         title: "Book Service",
-        technician,
         user: req.user,
+        messages: {
+          error: req.flash("error"),
+        },
       });
     } catch (error) {
       console.error("Show booking form error:", error);
       req.flash("error", "Something went wrong");
-      res.redirect("/technicians");
+      res.redirect("/bookings/techniciansBook");
     }
   }
 
@@ -243,11 +165,8 @@ class BookingController {
         matchStage.status = status;
       } else if (!status || status === "action-needed") {
         // Show bookings that need manager action by default
-        matchStage.status = {
-          $in: ["pending-manager-approval", "pending-manager-assignment"],
-        };
+        matchStage.status = "pending-manager-assignment";
       }
-      // If status is 'all', no status filter
 
       console.log("Fetching bookings with filter:", matchStage);
 
@@ -345,10 +264,6 @@ class BookingController {
         },
       ]);
 
-      console.log(
-        `Found ${bookings.length} bookings and ${technicians.length} technicians`
-      ); // DEBUG
-
       res.render("manager/manager-booking", {
         title: "Manage Bookings",
         bookings,
@@ -366,12 +281,15 @@ class BookingController {
       res.redirect("/manager/dashboard");
     }
   }
-  // manager assign task to technician (manager only) - UPDATE THIS METHOD
   async assignBooking(req, res) {
     try {
       const { bookingId } = req.params;
       const { technicianId } = req.body;
       const managerId = req.user.userId;
+
+      console.log(
+        `Assigning booking ${bookingId} to technician ${technicianId}`
+      );
 
       // Find booking
       const booking = await Booking.findById(bookingId);
@@ -380,12 +298,8 @@ class BookingController {
         return res.redirect("/bookings/manager/bookings");
       }
 
-      // Check if booking needs manager assignment
-      if (
-        !["pending-manager-approval", "pending-manager-assignment"].includes(
-          booking.status
-        )
-      ) {
+      // Check if booking needs assignment
+      if (booking.status !== "pending-manager-assignment") {
         req.flash(
           "error",
           `Booking cannot be assigned. Current status: ${booking.status}`
@@ -393,7 +307,7 @@ class BookingController {
         return res.redirect("/bookings/manager/bookings");
       }
 
-      // Get technician and manager details using aggregate
+      // Get technician and manager details
       const [technicianData, managerData] = await Promise.all([
         Technician.aggregate([
           {
@@ -418,32 +332,41 @@ class BookingController {
       ]);
 
       if (technicianData.length === 0) {
-        req.flash("error", "Technician not found");
+        req.flash("error", "Technician not found or inactive");
         return res.redirect("/bookings/manager/bookings");
       }
 
       const technician = technicianData[0];
 
-      // Update booking
+      // Update booking with assignment - FIXED: Remove assignmentHistory
       booking.technicianId = technicianId;
       booking.technicianName = technician.userDetails.name;
       booking.technicianSpecialization = technician.specialization;
       booking.assignedBy = managerId;
       booking.assignedByName = managerData.name;
       booking.assignedDate = new Date();
-      booking.status = "assigned";
-      booking.approvedBy = managerId;
+      booking.status = "assigned"; // Change status to assigned
       booking.managerApprovedAt = new Date();
+      booking.approvedBy = managerId;
+
+      // REMOVED: assignmentHistory.push() since it's not in schema
 
       // Update technician workload
-      await Technician.updateOne(
+      await Technician.findOneAndUpdate(
         { userId: new mongoose.Types.ObjectId(technicianId) },
         { $inc: { currentWorkload: 1 } }
       );
 
       await booking.save();
 
-      req.flash("success", "Booking assigned successfully!");
+      console.log(
+        `✅ Booking ${bookingId} assigned to ${technician.userDetails.name}`
+      );
+
+      req.flash(
+        "success",
+        `Booking assigned to ${technician.userDetails.name} successfully!`
+      );
       res.redirect("/bookings/manager/bookings");
     } catch (error) {
       console.error("Assign booking error:", error);
@@ -453,6 +376,7 @@ class BookingController {
   }
 
   // update booking status (technician only)
+  // Technician updates booking status
   async updateBookingStatus(req, res) {
     try {
       const { bookingId } = req.params;
@@ -486,6 +410,27 @@ class BookingController {
         booking.workStartedAt = new Date();
       } else if (status === "completed") {
         booking.workCompletedAt = new Date();
+
+        // Decrease technician workload
+        await Technician.findOneAndUpdate(
+          { userId: new mongoose.Types.ObjectId(technicianId) },
+          { $inc: { currentWorkload: -1 } }
+        );
+
+        try {
+          await FeedbackController.requestFeedbackEmail(bookingId);
+          console.log(` Feedback email triggered for booking ${bookingId}`);
+        } catch (emailError) {
+          console.error(" Failed to send feedback email:", emailError);
+          // Don't fail the whole request if email fails
+        }
+      } else if (status === "completed") {
+        booking.workCompletedAt = new Date();
+        // Decrease technician workload when completed
+        await Technician.findOneAndUpdate(
+          { userId: new mongoose.Types.ObjectId(technicianId) },
+          { $inc: { currentWorkload: -1 } }
+        );
       }
 
       await booking.save();
@@ -505,7 +450,24 @@ class BookingController {
 
       const tasks = await Booking.aggregate([
         {
-          $match: { technicianId: new mongoose.Types.ObjectId(technicianId) },
+          $match: {
+            technicianId: new mongoose.Types.ObjectId(technicianId),
+            status: { $in: ["assigned", "in-progress", "completed"] },
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "customerId",
+            foreignField: "_id",
+            as: "customerInfo",
+          },
+        },
+        {
+          $unwind: {
+            path: "$customerInfo",
+            preserveNullAndEmptyArrays: true,
+          },
         },
         {
           $project: {
@@ -524,10 +486,15 @@ class BookingController {
             assignedDate: 1,
             workStartedAt: 1,
             workCompletedAt: 1,
+            assignedByName: 1,
+            "customerInfo.userImage": 1,
           },
         },
         {
-          $sort: { createdAt: -1 },
+          $sort: {
+            status: 1, // Show assigned first, then in-progress, then completed
+            preferredDate: 1,
+          },
         },
       ]);
 
@@ -535,6 +502,10 @@ class BookingController {
         title: "My Tasks",
         tasks,
         user: req.user,
+        messages: {
+          success: req.flash("success"),
+          error: req.flash("error"),
+        },
       });
     } catch (error) {
       console.error("Get technician tasks error:", error);
@@ -565,22 +536,39 @@ class BookingController {
             name: "$userData.name",
             email: "$userData.email",
             phone: "$userData.phone",
+            userImage: "$userData.userImage", // Make sure this is included
             specialization: 1,
             experience: 1,
             serviceAreas: 1,
+            skills: 1,
+            availability: 1,
+            currentWorkload: { $ifNull: ["$currentWorkload", 0] }, // Default to 0 if null
+            maxWorkload: { $ifNull: ["$maxWorkload", 5] }, // Default to 5 if null
             rating: 1,
             hourlyRate: 1,
-            userImage: "$userData.userImage",
-            skills: 1,
-            // ADD THESE NEW FIELDS:
+          },
+        },
+        {
+          $sort: {
+            currentWorkload: 1, // Show less busy technicians first
             availability: 1,
-            currentWorkload: 1,
-            maxWorkload: 1,
           },
         },
       ]);
-      console.log("Technicians data:", technicians.length);
-      res.render("technicians-public", {
+
+      console.log(`Found ${technicians.length} active technicians`);
+
+      // Debug: Log technician data
+      technicians.forEach((tech, index) => {
+        console.log(`Tech ${index + 1}:`, {
+          name: tech.name,
+          availability: tech.availability,
+          workload: `${tech.currentWorkload}/${tech.maxWorkload}`,
+          userImage: tech.userImage,
+        });
+      });
+
+      return res.render("technicians-public", {
         title: "Our Technicians",
         technicians,
         user: req.user,
@@ -592,14 +580,15 @@ class BookingController {
     } catch (error) {
       console.error("Technicians list error:", error);
       req.flash("error", "Failed to load technicians");
-      res.redirect("/user/dashboard");
+      return res.redirect("/user/dashboard");
     }
   }
-  // Manager approves or reassigns booking - ADD THIS METHOD
+
+  // Manager approves booking (if you still need this for other flows)
   async approveBooking(req, res) {
     try {
       const { bookingId } = req.params;
-      const { action } = req.body; // 'approve' or 'reassign'
+      const { action } = req.body;
 
       const booking = await Booking.findById(bookingId);
 
@@ -608,29 +597,15 @@ class BookingController {
         return res.redirect("/bookings/manager/bookings");
       }
 
+      // This method might not be needed in new flow, but keeping for compatibility
       if (action === "approve") {
-        // Approve the customer's chosen technician
         booking.status = "assigned";
         booking.managerApprovedAt = new Date();
         booking.approvedBy = req.user.userId;
         booking.assignedByName = req.user.name;
         booking.assignedDate = new Date();
 
-        req.flash("success", "Booking approved and assigned to technician!");
-      } else {
-        // Manager wants to reassign
-        booking.status = "pending-manager-assignment";
-
-        // Decrement workload from original technician
-        await Technician.updateOne(
-          { userId: booking.technicianId },
-          { $inc: { currentWorkload: -1 } }
-        );
-
-        req.flash(
-          "info",
-          "Booking queued for reassignment to different technician"
-        );
+        req.flash("success", "Booking approved!");
       }
 
       await booking.save();
@@ -641,75 +616,65 @@ class BookingController {
       res.redirect("/bookings/manager/bookings");
     }
   }
-
-  // Manager assigns technician to pending assignments - ADD THIS METHOD
-  async assignTechnician(req, res) {
+  //
+  async updateBookingStatus(req, res) {
     try {
       const { bookingId } = req.params;
-      const { technicianId } = req.body;
-      const managerId = req.user.userId;
+      const { status } = req.body;
+      const technicianId = req.user.userId;
 
-      const [booking, manager, technicianData] = await Promise.all([
-        Booking.findById(bookingId),
-        User.findById(managerId),
-        Technician.aggregate([
-          {
-            $match: {
-              userId: new mongoose.Types.ObjectId(technicianId),
-              isActive: true,
-            },
-          },
-          {
-            $lookup: {
-              from: "users",
-              localField: "userId",
-              foreignField: "_id",
-              as: "userDetails",
-            },
-          },
-          { $unwind: "$userDetails" },
-        ]),
-      ]);
-
-      if (!booking || !manager || technicianData.length === 0) {
-        req.flash("error", "Booking, manager, or technician not found");
-        return res.redirect("/bookings/manager/bookings");
+      // Validate status
+      const validStatuses = ["in-progress", "completed", "cancelled"];
+      if (!validStatuses.includes(status)) {
+        req.flash("error", "Invalid status");
+        return res.redirect("/bookings/technician/tasks");
       }
 
-      const technician = technicianData[0];
+      // Find booking
+      const booking = await Booking.findById(bookingId);
+      if (!booking) {
+        req.flash("error", "Booking not found");
+        return res.redirect("/bookings/technician/tasks");
+      }
 
-      // If booking had a previous technician, decrement their workload
-      if (booking.technicianId && booking.status === "assigned") {
-        await Technician.updateOne(
-          { userId: booking.technicianId },
+      // Check if technician is assigned to this booking
+      if (booking.technicianId.toString() !== technicianId) {
+        req.flash("error", "Not authorized to update this booking");
+        return res.redirect("/bookings/technician/tasks");
+      }
+
+      // Update status and timestamps
+      booking.status = status;
+
+      if (status === "in-progress") {
+        booking.workStartedAt = new Date();
+      } else if (status === "completed") {
+        booking.workCompletedAt = new Date();
+
+        // Decrease technician workload when completed
+        await Technician.findOneAndUpdate(
+          { userId: new mongoose.Types.ObjectId(technicianId) },
           { $inc: { currentWorkload: -1 } }
         );
+
+        // ✅ NEW: Send feedback request email to customer
+        try {
+          await FeedbackService.requestFeedback(bookingId, technicianId);
+          console.log(`Feedback request sent for booking ${bookingId}`);
+        } catch (emailError) {
+          console.error("Failed to send feedback email:", emailError);
+          // Don't fail the whole request if email fails
+        }
       }
 
-      // Update booking with new technician
-      booking.technicianId = technicianId;
-      booking.technicianName = technician.userDetails.name;
-      booking.technicianSpecialization = technician.specialization;
-      booking.status = "assigned";
-      booking.assignedBy = managerId;
-      booking.assignedByName = manager.name;
-      booking.assignedDate = new Date();
-      booking.approvedBy = managerId;
-      booking.managerApprovedAt = new Date();
-
-      // Update new technician's workload
-      await Technician.updateOne(
-        { userId: new mongoose.Types.ObjectId(technicianId) },
-        { $inc: { currentWorkload: 1 } }
-      );
-
       await booking.save();
-      req.flash("success", "Technician assigned successfully!");
-      res.redirect("/bookings/manager/bookings");
+
+      req.flash("success", `Booking status updated to ${status}`);
+      res.redirect("/bookings/technician/tasks");
     } catch (error) {
-      console.error("Assignment error:", error);
-      req.flash("error", "Failed to assign technician");
-      res.redirect("/bookings/manager/bookings");
+      console.error("Update booking status error:", error);
+      req.flash("error", "Failed to update status");
+      res.redirect("/bookings/technician/tasks");
     }
   }
 }

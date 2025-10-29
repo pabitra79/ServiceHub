@@ -25,5 +25,8 @@ router.get(
   requireTechnician,
   feedbackController.getTechnicianFeedback
 );
+router.get("/email/:bookingId", feedbackController.showFeedbackForm);
+//
+router.post("/email/:bookingId", feedbackController.submitEmailFeedback);
 
 module.exports = router;
